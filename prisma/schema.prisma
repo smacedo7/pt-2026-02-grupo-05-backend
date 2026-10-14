@@ -1,0 +1,23 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Columns follow the team's database diagram (mod BD.png); fields use the
+// English names the application code works with.
+model User {
+  id                Int      @id @default(autoincrement())
+  username          String   @unique @db.VarChar(50)
+  name              String   @map("nome") @db.VarChar(255)
+  email             String   @unique @db.VarChar(255)
+  passwordHash      String   @map("senha_hash") @db.VarChar(255)
+  profilePictureUrl String?  @map("foto_perfil_url") @db.VarChar(255)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("users")
+}
