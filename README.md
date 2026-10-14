@@ -34,7 +34,7 @@ No macOS com Homebrew, o usuário do banco é o seu usuário do sistema, sem sen
 
    Se o comando `createdb` não estiver disponível, use `psql -U postgres -c "CREATE DATABASE pt_grupo05_dev;"` (e o mesmo para `pt_grupo05_test`).
 
-3. Crie o arquivo `.env` na raiz, trocando `USUARIO` e `SENHA` pelos do seu PostgreSQL local. Sem senha, use `postgresql://USUARIO@localhost:5432/...`.
+3. Crie o arquivo `.env` na raiz a partir do modelo (`cp .env.example .env`), trocando `USUARIO` e `SENHA` pelos do seu PostgreSQL local. Sem senha, use `postgresql://USUARIO@localhost:5432/...`.
 
    ```env
    DATABASE_URL="postgresql://USUARIO:SENHA@localhost:5432/pt_grupo05_dev?schema=public"
@@ -56,7 +56,7 @@ No macOS com Homebrew, o usuário do banco é o seu usuário do sistema, sem sen
    npx prisma migrate dev
    ```
 
-Os arquivos `.env` e `.env.test` são locais. O `.gitignore` ignora qualquer arquivo `.env*`; nunca force a inclusão deles em um commit.
+Os arquivos `.env` e `.env.test` são locais. O `.gitignore` ignora qualquer arquivo `.env*`, exceto o modelo `.env.example`, que só tem valores de exemplo; nunca force a inclusão dos demais em um commit.
 
 ## Executar
 

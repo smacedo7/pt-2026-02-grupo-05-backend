@@ -38,8 +38,9 @@ lerna-debug.log*
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# dotenv environment variable files: never versioned, in any variant
+# dotenv environment variable files: never versioned, except the placeholder example
 .env*
+!.env.example
 
 # temp directory
 .temp
