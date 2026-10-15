@@ -33,17 +33,3 @@ export const UniqueConflictResponse: ApiResponseOptions = {
     },
   },
 };
-
-export const LinkedRecordsConflictResponse: ApiResponseOptions = {
-  description:
-    'The account is referenced by other records and cannot be deleted. Not reachable yet: stores, reviews and comments do not exist in the schema.',
-  schema: {
-    example: {
-      statusCode: 409,
-      error: 'Conflict',
-      code: 'USER_HAS_LINKED_RECORDS',
-      message:
-        'the account has linked records (stores, reviews or comments) and cannot be deleted',
-    },
-  },
-};

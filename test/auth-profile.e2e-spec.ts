@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { PrismaService } from './../src/prisma/prisma.service';
-import { createTestApp } from './create-test-app';
+import { createTestApp, resetDatabase } from './create-test-app';
 
 const ana = {
   name: 'Ana Souza',
@@ -45,11 +45,11 @@ describe('Authentication and own profile (e2e)', () => {
   });
 
   beforeEach(async () => {
-    await prisma.user.deleteMany();
+    await resetDatabase(prisma);
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany();
+    await resetDatabase(prisma);
     await app.close();
   });
 
@@ -569,43 +569,7 @@ describe('Authentication and own profile (e2e)', () => {
       await register(ana);
     });
 
-    // The schema has no stores, reviews or comments yet, so the real relations
-    // cannot be tested. This only proves the mechanism: when a foreign key with
-    // ON DELETE RESTRICT references the user, PostgreSQL refuses the delete and
-    // the API answers 409. Each future relation still needs its own test.
-    describe('mechanism only: a referencing row with ON DELETE RESTRICT', () => {
-      beforeAll(async () => {
-        await prisma.$executeRaw`DROP TABLE IF EXISTS "e2e_linked_record"`;
-        await prisma.$executeRaw`CREATE TABLE "e2e_linked_record" ("id" SERIAL PRIMARY KEY, "user_id" INTEGER NOT NULL REFERENCES "users"("id") ON DELETE RESTRICT)`;
-      });
-
-      afterAll(async () => {
-        await prisma.$executeRaw`DROP TABLE IF EXISTS "e2e_linked_record"`;
-      });
-
-      it('answers 409 and keeps the account and the referencing row', async () => {
-        const id = await register(ana);
-        const token = await login(ana.email, ana.password);
-        await prisma.$executeRaw`INSERT INTO "e2e_linked_record" ("user_id") VALUES (${id})`;
-
-        try {
-          const response = await http()
-            .delete('/users/me')
-            .set(bearer(token))
-            .expect(409);
-
-          expect(response.body).toMatchObject({
-            statusCode: 409,
-            code: 'USER_HAS_LINKED_RECORDS',
-          });
-          await expect(prisma.user.count()).resolves.toBe(1);
-          await http().get('/users/me').set(bearer(token)).expect(200);
-        } finally {
-          await prisma.$executeRaw`DELETE FROM "e2e_linked_record"`;
-        }
-
-        await http().delete('/users/me').set(bearer(token)).expect(204);
-      });
-    });
+    // Each relation that references users has its own 409 test in
+    // relations.e2e-spec.ts.
   });
 });

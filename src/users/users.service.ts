@@ -78,21 +78,13 @@ export class UsersService {
     }
   }
 
+  // A single statement: the database removes the account and everything that
+  // belongs to it (stores with their products and ratings, reviews, comments,
+  // reset codes) in the same transaction, through ON DELETE CASCADE.
   async remove(id: number): Promise<void> {
     try {
-      // A single statement. Foreign keys with ON DELETE RESTRICT make the
-      // database refuse it while stores, reviews or comments reference the user.
       await this.prisma.user.delete({ where: { id } });
     } catch (error) {
-      if (isKnownError(error, 'P2003')) {
-        throw new ConflictException({
-          statusCode: 409,
-          error: 'Conflict',
-          code: 'USER_HAS_LINKED_RECORDS',
-          message:
-            'the account has linked records (stores, reviews or comments) and cannot be deleted',
-        });
-      }
       throw translateKnownError(error);
     }
   }
@@ -128,15 +120,6 @@ export class UsersService {
       throw uniqueConflict(taken);
     }
   }
-}
-
-function isKnownError(
-  error: unknown,
-  code: string,
-): error is Prisma.PrismaClientKnownRequestError {
-  return (
-    error instanceof Prisma.PrismaClientKnownRequestError && error.code === code
-  );
 }
 
 // Only the database errors this module expects are translated; anything else

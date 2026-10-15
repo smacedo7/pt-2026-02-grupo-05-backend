@@ -22,7 +22,6 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import {
-  LinkedRecordsConflictResponse,
   UnauthorizedResponse,
   UniqueConflictResponse,
   ValidationErrorResponse,
@@ -89,11 +88,10 @@ export class UsersController {
   @ApiOperation({
     summary: 'Delete my account',
     description:
-      'Permanent. Tokens of a deleted account answer 401 afterwards.',
+      'Permanent. Also removes the stores of the account, with their products and ratings, and the reviews and comments the account wrote. Tokens of a deleted account answer 401 afterwards.',
   })
   @ApiNoContentResponse({ description: 'Account deleted.' })
   @ApiUnauthorizedResponse(UnauthorizedResponse)
-  @ApiConflictResponse(LinkedRecordsConflictResponse)
   removeMe(@CurrentUserId() userId: number): Promise<void> {
     return this.usersService.remove(userId);
   }

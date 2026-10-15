@@ -4,7 +4,7 @@ import { App } from 'supertest/types';
 import { FRONTEND_ORIGIN } from './../src/app.setup';
 import { PasswordService } from './../src/password/password.service';
 import { PrismaService } from './../src/prisma/prisma.service';
-import { createTestApp } from './create-test-app';
+import { createTestApp, resetDatabase } from './create-test-app';
 
 const valid = {
   name: 'Ana Souza',
@@ -23,11 +23,11 @@ describe('Users (e2e)', () => {
   });
 
   beforeEach(async () => {
-    await prisma.user.deleteMany();
+    await resetDatabase(prisma);
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany();
+    await resetDatabase(prisma);
     await app.close();
   });
 

@@ -295,17 +295,6 @@ describe('UsersService', () => {
       expect(user.delete).toHaveBeenCalledWith({ where: { id: 1 } });
     });
 
-    it('answers a conflict when the database refuses because of linked records', async () => {
-      user.delete.mockRejectedValue(prismaError('P2003'));
-
-      const error = await service.remove(1).catch((e: unknown) => e);
-
-      expect((error as ConflictException).getResponse()).toMatchObject({
-        statusCode: 409,
-        code: 'USER_HAS_LINKED_RECORDS',
-      });
-    });
-
     it('answers 401 when the account no longer exists', async () => {
       user.delete.mockRejectedValue(prismaError('P2025'));
 
@@ -314,7 +303,7 @@ describe('UsersService', () => {
       );
     });
 
-    it('treats a foreign key error as linked records only when deleting', async () => {
+    it('does not translate foreign key errors on update', async () => {
       const error = prismaError('P2003');
       user.update.mockRejectedValue(error);
 

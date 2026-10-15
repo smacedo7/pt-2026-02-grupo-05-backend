@@ -28,8 +28,19 @@ export async function createTestApp(): Promise<{
     throw new Error(`refusing to erase data in database "${database}"`);
   }
 
-  // Left behind when a run is killed mid-test; it would block deleteMany.
-  await prisma.$executeRaw`DROP TABLE IF EXISTS "e2e_linked_record"`;
-
   return { app, prisma };
+}
+
+// Children first, so no parent is deleted while rows still reference it.
+export async function resetDatabase(prisma: PrismaService): Promise<void> {
+  await prisma.$transaction([
+    prisma.ratingComment.deleteMany(),
+    prisma.storeRating.deleteMany(),
+    prisma.productRating.deleteMany(),
+    prisma.productImage.deleteMany(),
+    prisma.product.deleteMany(),
+    prisma.store.deleteMany(),
+    prisma.category.deleteMany(),
+    prisma.user.deleteMany(),
+  ]);
 }
