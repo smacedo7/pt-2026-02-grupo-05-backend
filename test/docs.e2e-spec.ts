@@ -45,7 +45,10 @@ describe('API documentation (e2e)', () => {
       'DELETE /users/me',
       'GET /users/me',
       'PATCH /users/me',
+      'PATCH /users/me/password',
+      'POST /auth/forgot-password',
       'POST /auth/login',
+      'POST /auth/reset-password',
       'POST /users',
     ]);
   });

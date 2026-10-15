@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException,
@@ -6,6 +7,7 @@ import {
 import { Prisma, User } from '@prisma/client';
 import { PasswordService } from '../password/password.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { toUserResponse, UserResponseDto } from './dto/user-response.dto';
@@ -73,6 +75,32 @@ export class UsersService {
       // A single statement: it either applies every change or none.
       const user = await this.prisma.user.update({ where: { id }, data });
       return toUserResponse(user);
+    } catch (error) {
+      throw translateKnownError(error);
+    }
+  }
+
+  // The current password must match before the new one is accepted.
+  async changePassword(id: number, dto: ChangePasswordDto): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      throw accountNoLongerExists();
+    }
+    const matches = await this.passwords.verify(
+      dto.currentPassword,
+      user.passwordHash,
+    );
+    if (!matches) {
+      throw new BadRequestException({
+        statusCode: 400,
+        error: 'Bad Request',
+        code: 'CURRENT_PASSWORD_INCORRECT',
+        message: 'the current password is incorrect',
+      });
+    }
+    const passwordHash = await this.passwords.hash(dto.newPassword);
+    try {
+      await this.prisma.user.update({ where: { id }, data: { passwordHash } });
     } catch (error) {
       throw translateKnownError(error);
     }

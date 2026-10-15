@@ -28,6 +28,7 @@ import {
 } from '../api-errors';
 import { CurrentUserId } from '../auth/current-user-id.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
@@ -79,6 +80,25 @@ export class UsersController {
     @Body() dto: UpdateUserDto,
   ): Promise<UserResponseDto> {
     return this.usersService.update(userId, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('me/password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Change my password',
+    description:
+      'Needs the current password. Tokens issued before the change stay valid until they expire.',
+  })
+  @ApiNoContentResponse({ description: 'Password changed.' })
+  @ApiBadRequestResponse(ValidationErrorResponse)
+  @ApiUnauthorizedResponse(UnauthorizedResponse)
+  async changeMyPassword(
+    @CurrentUserId() userId: number,
+    @Body() dto: ChangePasswordDto,
+  ): Promise<void> {
+    await this.usersService.changePassword(userId, dto);
   }
 
   @UseGuards(JwtAuthGuard)
