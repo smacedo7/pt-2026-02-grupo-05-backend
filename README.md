@@ -1,124 +1,296 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# PT 2026.2 — Grupo 05 — Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API do projeto do grupo 05, em NestJS + TypeScript, com PostgreSQL e Prisma 6 (`prisma` e `@prisma/client` 6.x; o Prisma 7 não é usado).
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Requisitos
 
-## Description
+- Node.js 20.12 ou superior e npm
+- PostgreSQL 14 ou superior instalado localmente (não usamos Docker)
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Instalar o PostgreSQL
 
-## Project setup
+| Sistema | Como instalar |
+| --- | --- |
+| macOS | `brew install postgresql@17` e `brew services start postgresql@17` |
+| Windows | instalador em https://www.postgresql.org/download/windows/ (anote a senha do usuário `postgres`) |
+| Linux (Debian/Ubuntu) | `sudo apt install postgresql` |
 
-```bash
-$ npm install
-```
+No macOS com Homebrew, o usuário do banco é o seu usuário do sistema, sem senha. No Windows e no Linux, normalmente é `postgres` com a senha definida na instalação.
 
-## Compile and run the project
+## Configurar o projeto
 
-```bash
-# development
-$ npm run start
+1. Instale as dependências. O `postinstall` gera o Prisma Client (por isso o pacote `prisma` fica em `dependencies`).
 
-# watch mode
-$ npm run start:dev
+   ```bash
+   npm ci
+   ```
 
-# production mode
-$ npm run start:prod
-```
+2. Crie os bancos de desenvolvimento e de testes.
 
-## Run tests
+   ```bash
+   createdb pt_grupo05_dev
+   createdb pt_grupo05_test
+   ```
 
-```bash
-# unit tests
-$ npm run test
+   Se o comando `createdb` não estiver disponível, use `psql -U postgres -c "CREATE DATABASE pt_grupo05_dev;"` (e o mesmo para `pt_grupo05_test`).
 
-# e2e tests
-$ npm run test:e2e
+3. Crie o arquivo `.env` na raiz a partir do modelo (`cp .env.example .env`), trocando `USUARIO` e `SENHA` pelos do seu PostgreSQL local. Sem senha, use `postgresql://USUARIO@localhost:5432/...`.
 
-# test coverage
-$ npm run test:cov
-```
+   ```env
+   DATABASE_URL="postgresql://USUARIO:SENHA@localhost:5432/pt_grupo05_dev?schema=public"
+   JWT_SECRET="COLE_AQUI_UM_VALOR_ALEATORIO"
+   ```
 
-## Deployment
+   Gere o valor de `JWT_SECRET` com `openssl rand -hex 32` (ou `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`). A aplicação não inicia com `JWT_SECRET` ausente ou com menos de 32 caracteres.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+4. Crie o arquivo `.env.test`, apontando para o banco de testes.
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+   ```env
+   DATABASE_URL="postgresql://USUARIO:SENHA@localhost:5432/pt_grupo05_test?schema=public"
+   JWT_SECRET="OUTRO_VALOR_ALEATORIO"
+   ```
+
+5. Aplique as migrações no banco de desenvolvimento.
+
+   ```bash
+   npx prisma migrate dev
+   ```
+
+Os arquivos `.env` e `.env.test` são locais. O `.gitignore` ignora qualquer arquivo `.env*`, exceto o modelo `.env.example`, que só tem valores de exemplo; nunca force a inclusão dos demais em um commit.
+
+## Executar
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+npm run start:dev
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Observability
-
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
-
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
-
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
-
-To add it to this project:
+A API sobe em `http://localhost:3001`, deixando a porta 3000 para o frontend (Next.js). Para usar outra porta, defina `PORT`:
 
 ```bash
-$ npm install @nestjs/observe
+# macOS / Linux
+PORT=4000 npm run start:dev
+
+# Windows (PowerShell)
+$env:PORT=4000; npm run start:dev
 ```
 
-Then follow the [setup guide](https://docs.nestjs.com/observability/overview) - it takes a single import and an app key.
+### CORS
 
-The free plan needs no payment details and covers 300,000 events a month. You can also browse the [live demo](https://www.observe-demo.nestjs.com/dashboard) first - the whole dashboard over a busy service's data, with nothing to install.
+O navegador só pode chamar a API a partir de `http://localhost:3000`, com os métodos `GET`, `POST`, `PATCH`, `DELETE` e os cabeçalhos `Content-Type` e `Authorization`. A configuração fica em `src/app.setup.ts`; outras origens não são liberadas. Se o frontend rodar em outro endereço, ajuste `FRONTEND_ORIGIN` nesse arquivo.
 
-## Resources
+Com a API no ar, a documentação interativa (Swagger) fica em `http://localhost:3001/docs` e o OpenAPI em JSON em `http://localhost:3001/docs-json`.
 
-Check out a few resources that may come in handy when working with NestJS:
+Para inspecionar os dados: `npx prisma studio`.
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observe](https://observe.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## Verificar
 
-## Support
+```bash
+npm run build
+npm run lint
+npm test
+npm run test:e2e
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Os testes e2e apagam dados. Por segurança, só rodam se `DATABASE_URL` (lida de `.env.test`) apontar para um banco PostgreSQL cujo nome termine em `_test`; conferem isso de novo perguntando ao servidor antes de apagar qualquer coisa; aplicam as migrações nesse banco sozinhos; e rodam em série, porque compartilham o mesmo banco.
 
-## Stay in touch
+## Estrutura
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+```text
+prisma/
+  schema.prisma        models do banco
+  migrations/          histórico de migrações (versionado)
+src/
+  prisma/              PrismaService, disponível em todos os módulos
+  password/            PasswordService: hash e verificação de senha
+  auth/                login, emissão do token e JwtAuthGuard
+  users/               cadastro e operações do próprio perfil
+  app.setup.ts         porta padrão, CORS e Swagger
+  api-errors.ts        formatos de erro usados na documentação
+test/                  testes e2e
+```
 
-## License
+### Usar o banco em um módulo novo
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+O `PrismaModule` é global: basta injetar o `PrismaService`.
+
+```ts
+constructor(private readonly prisma: PrismaService) {}
+```
+
+### Alterar o banco
+
+Edite `prisma/schema.prisma` e gere a migração:
+
+```bash
+npx prisma migrate dev --name descricao_da_mudanca
+```
+
+Commite a pasta criada em `prisma/migrations/`. Quem atualizar a branch roda `npx prisma migrate dev` para aplicar.
+
+Ao criar uma relação, declare `onDelete` explicitamente e siga a regra do schema:
+
+- **`Cascade`** quando o filho pertence ao pai (loja de um usuário, produto de uma loja, avaliação de uma loja): a exclusão do pai remove o agregado inteiro numa única operação.
+- **`Restrict`** para dados compartilhados (hoje, categorias): não se exclui uma categoria em uso.
+
+Cada regra de exclusão precisa de um teste com banco real em `test/relations.e2e-spec.ts`.
+
+### Senhas
+
+Use sempre o `PasswordService` (`src/password`): `hash(senha)` ao gravar e `verify(senha, hash)` ao conferir. Nunca grave, devolva ou registre em log a senha ou o hash, e nunca altere a senha recebida (sem `trim`, sem mudar a caixa).
+
+### Proteger uma rota
+
+O `JwtAuthGuard` funciona em qualquer módulo, sem importar o `AuthModule`. O id do usuário autenticado vem do token:
+
+```ts
+@UseGuards(JwtAuthGuard)
+@Get('minhas-lojas')
+findMine(@CurrentUserId() userId: number) { ... }
+```
+
+Nunca receba o id do usuário pela URL ou pelo corpo em operações privadas.
+
+O guard confere apenas o token (assinatura e validade); ele não consulta o banco. Um token emitido antes de a conta ser excluída continua passando pelo guard por até 1 dia. Por isso, em toda rota privada, busque o usuário pelo `userId` e responda 401 se ele não existir mais — é o que o `UsersService` faz em `/users/me`.
+
+## API
+
+Base local: `http://localhost:3001`. Referência completa e testável em `/docs`.
+
+| Operação | Rota | Autenticação | Sucesso |
+| --- | --- | --- | --- |
+| Cadastrar | `POST /users` | pública | 201 |
+| Entrar | `POST /auth/login` | pública | 200 |
+| Ver meu perfil | `GET /users/me` | Bearer | 200 |
+| Editar meu perfil | `PATCH /users/me` | Bearer | 200 |
+| Excluir minha conta | `DELETE /users/me` | Bearer | 204 |
+| Trocar minha senha | `PATCH /users/me/password` | Bearer | 204 |
+| Pedir código de recuperação | `POST /auth/forgot-password` | pública | 202 |
+| Redefinir senha com o código | `POST /auth/reset-password` | pública | 204 |
+
+Não existe listagem de usuários nem consulta por id.
+
+### Usuário
+
+Todas as respostas que devolvem um usuário têm este formato. Senha e hash nunca aparecem.
+
+```json
+{
+  "id": 1,
+  "name": "Ana Souza",
+  "username": "ana.souza",
+  "email": "ana@exemplo.com",
+  "profilePictureUrl": null,
+  "createdAt": "2026-10-14T01:08:35.844Z",
+  "updatedAt": "2026-10-14T01:08:35.844Z"
+}
+```
+
+### `POST /users` — cadastro
+
+```bash
+curl -X POST http://localhost:3001/users \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Ana Souza","username":"ana.souza","email":"ana@exemplo.com","password":"senha-segura","passwordConfirmation":"senha-segura"}'
+```
+
+| Campo | Regra |
+| --- | --- |
+| `name` | obrigatório, até 255 caracteres, sem caracteres de controle |
+| `username` | 3 a 50 caracteres: letras, números, `.`, `-`, `_`; gravado em minúsculas |
+| `email` | e-mail válido, até 255 caracteres; gravado em minúsculas |
+| `password` | mínimo de 8 caracteres e máximo de 72 bytes; usada exatamente como enviada |
+| `passwordConfirmation` | igual a `password` |
+
+Responde 201 com o usuário. Não faz login: depois do cadastro, chame `POST /auth/login`.
+
+### `POST /auth/login` — entrar
+
+```bash
+curl -X POST http://localhost:3001/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"ana@exemplo.com","password":"senha-segura"}'
+```
+
+```json
+{ "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }
+```
+
+O e-mail não diferencia maiúsculas. O token vale 1 dia; não há renovação nem logout no servidor (para sair, o frontend descarta o token). Senha errada e e-mail desconhecido respondem o mesmo 401.
+
+### Rotas privadas
+
+Envie o token em todas elas:
+
+```
+Authorization: Bearer <accessToken>
+```
+
+```bash
+# ver meu perfil
+curl http://localhost:3001/users/me -H "Authorization: Bearer $TOKEN"
+
+# editar: envie só o que quer mudar
+curl -X PATCH http://localhost:3001/users/me \
+  -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" \
+  -d '{"name":"Ana Maria Souza","profilePictureUrl":"https://exemplo.com/ana.png"}'
+
+# excluir minha conta
+curl -X DELETE http://localhost:3001/users/me -H "Authorization: Bearer $TOKEN"
+```
+
+**`PATCH /users/me`** aceita qualquer subconjunto de `name`, `username`, `email` (mesmas regras do cadastro) e `profilePictureUrl` (URL `http` ou `https` de até 255 caracteres, sem usuário e senha embutidos; `null` remove a foto). Corpo vazio devolve o perfil atual. `password`, `id` e qualquer outro campo respondem 400. Responde 200 com o usuário atualizado.
+
+**`DELETE /users/me`** responde 204 sem corpo. A exclusão é definitiva e remove, na mesma operação, tudo o que pertence à conta: lojas (com produtos, imagens e avaliações das lojas), avaliações feitas por ela, comentários que ela escreveu e os códigos de recuperação. Categorias são dados compartilhados e não são afetadas. A rota é autorizada pelo JWT e atua somente sobre a conta autenticada: não recebe id no caminho nem no corpo. Depois da exclusão, o token dessa conta passa a responder 401.
+
+**`PATCH /users/me/password`** troca a senha da conta autenticada. Corpo: `currentPassword`, `newPassword` (mesmas regras do cadastro) e `newPasswordConfirmation`. Senha atual errada responde 400 `CURRENT_PASSWORD_INCORRECT`. Responde 204.
+
+### Recuperação de senha
+
+1. `POST /auth/forgot-password` com `{ "email": "..." }`. Responde sempre **202** com `{ "message": "Request received." }`, exista ou não a conta, e nunca inclui o código.
+2. O código de 6 dígitos vale 15 minutos, serve uma única vez e é invalidado após 5 tentativas erradas. Um novo pedido invalida os códigos anteriores.
+3. `POST /auth/reset-password` com `{ "email", "code", "password", "passwordConfirmation" }`. Responde 204. Código errado, expirado, já usado ou de e-mail desconhecido respondem 400 `RESET_CODE_INVALID`, sempre com a mesma mensagem.
+
+**Limitações, para ler antes de usar:**
+
+- **Não há canal real de envio.** O projeto não tem serviço de e-mail. Em desenvolvimento (`NODE_ENV` diferente de `production` e de `test`), o código aparece no **console do servidor**, como `DEVELOPMENT ONLY - reset code for ...`. Esse canal recusa rodar em produção. Em produção hoje não há canal configurado: o pedido responde 202, mas nenhum código é entregue. Escolher e integrar um canal real é pendência de infraestrutura; esta entrega não afirma envio real.
+- **Token após troca de senha.** O JWT continua válido até expirar (1 dia) após troca ou recuperação de senha. Não há invalidação de tokens antigos.
+- **Logout** não existe no servidor: o frontend descarta o token.
+
+### Erros
+
+As mensagens vêm em inglês. No frontend, decida pelo `statusCode`, pelo `code` e por `fields`, não pelo texto.
+
+| Status | Quando | Corpo |
+| --- | --- | --- |
+| 400 | dados inválidos ou campo não permitido | `message` é uma lista; cada item começa pelo nome do campo, exceto campo não permitido, que vem como `property <campo> should not exist` |
+| 401 | login: credenciais erradas | `message: "Invalid credentials"` |
+| 401 | rota privada: token ausente, inválido, expirado ou de conta excluída | `message: "Unauthorized"` |
+| 409 | e-mail ou username em uso (cadastro e edição) | `code: "UNIQUE_CONFLICT"`, `fields` com os campos |
+| 400 | código de recuperação inválido, expirado ou já usado | `code: "RESET_CODE_INVALID"` |
+| 400 | senha atual incorreta na troca de senha | `code: "CURRENT_PASSWORD_INCORRECT"` |
+| 500 | erro inesperado | `message: "Internal server error"`; o detalhe fica só no log do servidor |
+
+```json
+{ "statusCode": 400, "error": "Bad Request", "message": ["email must be an email", "property role should not exist"] }
+```
+
+```json
+{ "statusCode": 409, "error": "Conflict", "code": "UNIQUE_CONFLICT", "message": "email already in use", "fields": ["email"] }
+```
+
+```json
+{ "statusCode": 401, "message": "Unauthorized" }
+```
+
+Em pedidos simultâneos, `fields` pode trazer só um dos campos em conflito.
+
+### Exemplo com Axios
+
+```ts
+const api = axios.create({ baseURL: 'http://localhost:3001' });
+
+const { data } = await api.post('/auth/login', { email, password });
+api.defaults.headers.common.Authorization = `Bearer ${data.accessToken}`;
+
+const me = await api.get('/users/me');
+```

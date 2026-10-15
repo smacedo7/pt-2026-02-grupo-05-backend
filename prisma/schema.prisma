@@ -1,0 +1,189 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Names follow the team's database diagram (mod BD.png); the application code
+// uses the English field names and the columns are mapped to the diagram's.
+//
+// onDelete rules:
+// - CASCADE where the child belongs to the parent: a user's stores, reset
+//   codes, ratings and comments; a store's products and ratings; a product's
+//   images and ratings; a rating's comments. Deleting the parent removes the
+//   whole aggregate in one statement, so it is atomic.
+// - RESTRICT for categories: they are shared reference data, so a category in
+//   use cannot be deleted and cannot be turned into a child of itself.
+// Constraints Prisma cannot express (rating range, one comment target, price
+// and stock ranges, category not its own parent) are in the migration SQL.
+
+model User {
+  id                Int      @id @default(autoincrement())
+  username          String   @unique @db.VarChar(50)
+  name              String   @map("nome") @db.VarChar(255)
+  email             String   @unique @db.VarChar(255)
+  passwordHash      String   @map("senha_hash") @db.VarChar(255)
+  profilePictureUrl String?  @map("foto_perfil_url") @db.VarChar(255)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  stores         Store[]
+  passwordResets PasswordReset[]
+  storeRatings   StoreRating[]
+  productRatings ProductRating[]
+  ratingComments RatingComment[]
+
+  @@map("users")
+}
+
+model PasswordReset {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  // HMAC-SHA256 of the 6-digit code, never the code itself.
+  codeHash  String   @map("code_hash") @db.VarChar(64)
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  // Wrong guesses for this code; the code is burned after the limit.
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_resets")
+}
+
+model Category {
+  id               Int    @id @default(autoincrement())
+  name             String @db.VarChar(100)
+  parentCategoryId Int?   @map("parent_category_id")
+
+  parentCategory Category?  @relation("CategoryTree", fields: [parentCategoryId], references: [id], onDelete: Restrict)
+  subcategories  Category[] @relation("CategoryTree")
+  stores         Store[]
+  products       Product[]
+
+  @@index([parentCategoryId])
+  @@map("categories")
+}
+
+model Store {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  categoryId  Int      @map("category_id")
+  name        String   @db.VarChar(255)
+  description String?  @db.Text
+  logoUrl     String?  @map("logo_url") @db.VarChar(255)
+  bannerUrl   String?  @map("banner_url") @db.VarChar(255)
+  stickerUrl  String?  @map("sticker_url") @db.VarChar(255)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Each store has exactly one owner; a user may own many stores.
+  owner    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  products Product[]
+  ratings  StoreRating[]
+
+  @@index([userId])
+  @@index([categoryId])
+  @@map("stores")
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  storeId     Int      @map("store_id")
+  categoryId  Int      @map("category_id")
+  name        String   @db.VarChar(255)
+  description String?  @db.Text
+  price       Decimal  @db.Decimal(8, 2)
+  stock       Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  store    Store           @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  category Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  images   ProductImage[]
+  ratings  ProductRating[]
+
+  @@index([storeId])
+  @@index([categoryId])
+  @@map("products")
+}
+
+model ProductImage {
+  id        Int    @id @default(autoincrement())
+  productId Int    @map("product_id")
+  imageUrl  String @map("image_url") @db.VarChar(255)
+  // "order" is a reserved word in SQL, so the column is sort_order.
+  sortOrder Int    @map("sort_order")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, sortOrder])
+  @@map("product_images")
+}
+
+model StoreRating {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  storeId   Int      @map("store_id")
+  // 0 to 5 stars; the range is enforced by a CHECK in the migration.
+  rating    Int
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store    Store           @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  comments RatingComment[]
+
+  // One review per user and store.
+  @@unique([userId, storeId])
+  @@index([storeId])
+  @@map("store_ratings")
+}
+
+model ProductRating {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  productId Int      @map("product_id")
+  // 0 to 5 stars; the range is enforced by a CHECK in the migration.
+  rating    Int
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product  Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  comments RatingComment[]
+
+  // One review per user and product.
+  @@unique([userId, productId])
+  @@index([productId])
+  @@map("product_ratings")
+}
+
+// A comment answers exactly one rating: a store rating or a product rating.
+// The "exactly one" rule is a CHECK in the migration.
+model RatingComment {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @map("user_id")
+  storeRatingId   Int?     @map("store_rating_id")
+  productRatingId Int?     @map("product_rating_id")
+  content         String   @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeRating   StoreRating?   @relation(fields: [storeRatingId], references: [id], onDelete: Cascade)
+  productRating ProductRating? @relation(fields: [productRatingId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([storeRatingId])
+  @@index([productRatingId])
+  @@map("rating_comments")
+}
