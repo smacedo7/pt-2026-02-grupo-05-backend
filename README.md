@@ -1,6 +1,6 @@
 # PT 2026.2 — Grupo 05 — Backend
 
-API do projeto do grupo 05, em NestJS + TypeScript, com PostgreSQL e Prisma.
+API do projeto do grupo 05, em NestJS + TypeScript, com PostgreSQL e Prisma 6 (`prisma` e `@prisma/client` 6.x; o Prisma 7 não é usado).
 
 ## Requisitos
 
@@ -127,7 +127,12 @@ npx prisma migrate dev --name descricao_da_mudanca
 
 Commite a pasta criada em `prisma/migrations/`. Quem atualizar a branch roda `npx prisma migrate dev` para aplicar.
 
-Models que se relacionam com `User` (lojas, avaliações, comentários) devem declarar a relação como obrigatória e com `onDelete: Restrict`.
+Ao criar uma relação, declare `onDelete` explicitamente e siga a regra do schema:
+
+- **`Cascade`** quando o filho pertence ao pai (loja de um usuário, produto de uma loja, avaliação de uma loja): a exclusão do pai remove o agregado inteiro numa única operação.
+- **`Restrict`** para dados compartilhados (hoje, categorias): não se exclui uma categoria em uso.
+
+Cada regra de exclusão precisa de um teste com banco real em `test/relations.e2e-spec.ts`.
 
 ### Senhas
 
@@ -158,8 +163,11 @@ Base local: `http://localhost:3001`. Referência completa e testável em `/docs`
 | Ver meu perfil | `GET /users/me` | Bearer | 200 |
 | Editar meu perfil | `PATCH /users/me` | Bearer | 200 |
 | Excluir minha conta | `DELETE /users/me` | Bearer | 204 |
+| Trocar minha senha | `PATCH /users/me/password` | Bearer | 204 |
+| Pedir código de recuperação | `POST /auth/forgot-password` | pública | 202 |
+| Redefinir senha com o código | `POST /auth/reset-password` | pública | 204 |
 
-Não existe listagem de usuários nem consulta por id. Recuperação e troca de senha não fazem parte desta entrega.
+Não existe listagem de usuários nem consulta por id.
 
 ### Usuário
 
@@ -232,9 +240,21 @@ curl -X DELETE http://localhost:3001/users/me -H "Authorization: Bearer $TOKEN"
 
 **`PATCH /users/me`** aceita qualquer subconjunto de `name`, `username`, `email` (mesmas regras do cadastro) e `profilePictureUrl` (URL `http` ou `https` de até 255 caracteres, sem usuário e senha embutidos; `null` remove a foto). Corpo vazio devolve o perfil atual. `password`, `id` e qualquer outro campo respondem 400. Responde 200 com o usuário atualizado.
 
-**`DELETE /users/me`** responde 204 sem corpo. A exclusão é definitiva; depois dela, o token dessa conta passa a responder 401.
+**`DELETE /users/me`** responde 204 sem corpo. A exclusão é definitiva e remove, na mesma operação, tudo o que pertence à conta: lojas (com produtos, imagens e avaliações das lojas), avaliações feitas por ela, comentários que ela escreveu e os códigos de recuperação. Categorias são dados compartilhados e não são afetadas. A rota é autorizada pelo JWT e atua somente sobre a conta autenticada: não recebe id no caminho nem no corpo. Depois da exclusão, o token dessa conta passa a responder 401.
 
-> **Limitação conhecida da exclusão.** A regra do projeto é que uma conta com lojas, avaliações ou comentários não pode ser excluída (409 `USER_HAS_LINKED_RECORDS`). Esses models ainda não existem no banco, então hoje **toda conta pode ser excluída** e essa proteção **não foi verificada com as relações reais** — só o mecanismo foi testado, com uma tabela temporária. Ela passa a valer quando cada model novo declarar a relação com `User` com `onDelete: Restrict`, e cada relação precisa do seu próprio teste.
+**`PATCH /users/me/password`** troca a senha da conta autenticada. Corpo: `currentPassword`, `newPassword` (mesmas regras do cadastro) e `newPasswordConfirmation`. Senha atual errada responde 400 `CURRENT_PASSWORD_INCORRECT`. Responde 204.
+
+### Recuperação de senha
+
+1. `POST /auth/forgot-password` com `{ "email": "..." }`. Responde sempre **202** com `{ "message": "Request received." }`, exista ou não a conta, e nunca inclui o código.
+2. O código de 6 dígitos vale 15 minutos, serve uma única vez e é invalidado após 5 tentativas erradas. Um novo pedido invalida os códigos anteriores.
+3. `POST /auth/reset-password` com `{ "email", "code", "password", "passwordConfirmation" }`. Responde 204. Código errado, expirado, já usado ou de e-mail desconhecido respondem 400 `RESET_CODE_INVALID`, sempre com a mesma mensagem.
+
+**Limitações, para ler antes de usar:**
+
+- **Não há canal real de envio.** O projeto não tem serviço de e-mail. Em desenvolvimento (`NODE_ENV` diferente de `production` e de `test`), o código aparece no **console do servidor**, como `DEVELOPMENT ONLY - reset code for ...`. Esse canal recusa rodar em produção. Em produção hoje não há canal configurado: o pedido responde 202, mas nenhum código é entregue. Escolher e integrar um canal real é pendência de infraestrutura; esta entrega não afirma envio real.
+- **Token após troca de senha.** O JWT continua válido até expirar (1 dia) após troca ou recuperação de senha. Não há invalidação de tokens antigos.
+- **Logout** não existe no servidor: o frontend descarta o token.
 
 ### Erros
 
@@ -246,7 +266,8 @@ As mensagens vêm em inglês. No frontend, decida pelo `statusCode`, pelo `code`
 | 401 | login: credenciais erradas | `message: "Invalid credentials"` |
 | 401 | rota privada: token ausente, inválido, expirado ou de conta excluída | `message: "Unauthorized"` |
 | 409 | e-mail ou username em uso (cadastro e edição) | `code: "UNIQUE_CONFLICT"`, `fields` com os campos |
-| 409 | exclusão bloqueada por registros vinculados | `code: "USER_HAS_LINKED_RECORDS"` |
+| 400 | código de recuperação inválido, expirado ou já usado | `code: "RESET_CODE_INVALID"` |
+| 400 | senha atual incorreta na troca de senha | `code: "CURRENT_PASSWORD_INCORRECT"` |
 | 500 | erro inesperado | `message: "Internal server error"`; o detalhe fica só no log do servidor |
 
 ```json

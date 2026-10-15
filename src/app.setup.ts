@@ -18,7 +18,7 @@ export function setupApp(app: INestApplication): void {
     new DocumentBuilder()
       .setTitle('PT 2026.2 - Grupo 05 - API')
       .setDescription(
-        'Registration, login and own-profile operations. Private routes need "Authorization: Bearer <accessToken>" from POST /auth/login.',
+        'Registration, login, password recovery and change, and own-profile operations. Private routes need "Authorization: Bearer <accessToken>" from POST /auth/login. A reset code is delivered only in development (server console); no e-mail channel exists yet.',
       )
       .setVersion('0.1.0')
       .addBearerAuth()

@@ -1,5 +1,6 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import {
+  ApiAcceptedResponse,
   ApiBadRequestResponse,
   ApiNoContentResponse,
   ApiOkResponse,
@@ -30,6 +31,10 @@ export class AuthController {
     summary: 'Ask for a password reset code',
     description:
       'Always answers 202 with the same body, whether or not the e-mail is registered, and never includes the code. Delivery goes through a channel that is still a pending infrastructure decision: no e-mail is sent by this API yet. Development prints the code in the server console.',
+  })
+  @ApiAcceptedResponse({
+    description: 'Same answer for registered and unknown e-mails.',
+    schema: { example: { message: 'Request received.' } },
   })
   @ApiBadRequestResponse(ValidationErrorResponse)
   async forgotPassword(
