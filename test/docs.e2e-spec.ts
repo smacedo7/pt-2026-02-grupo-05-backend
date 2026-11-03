@@ -41,16 +41,24 @@ describe('API documentation (e2e)', () => {
       Object.keys(methods).map((method) => `${method.toUpperCase()} ${path}`),
     );
 
-    expect(routes.sort()).toEqual([
-      'DELETE /users/me',
-      'GET /users/me',
-      'PATCH /users/me',
-      'PATCH /users/me/password',
-      'POST /auth/forgot-password',
-      'POST /auth/login',
-      'POST /auth/reset-password',
-      'POST /users',
-    ]);
+    expect(routes.sort()).toEqual(
+      [
+        'DELETE /categories/{id}',
+        'DELETE /users/me',
+        'GET /categories',
+        'GET /categories/by-slug/{slug}',
+        'GET /categories/{id}',
+        'PATCH /categories/{id}',
+        'POST /categories',
+        'GET /users/me',
+        'PATCH /users/me',
+        'PATCH /users/me/password',
+        'POST /auth/forgot-password',
+        'POST /auth/login',
+        'POST /auth/reset-password',
+        'POST /users',
+      ].sort(),
+    );
   });
 
   it('marks only the /users/me routes as requiring a bearer token', () => {
@@ -64,6 +72,23 @@ describe('API documentation (e2e)', () => {
     }
     expect(document.paths['/users'].post.security).toBeUndefined();
     expect(document.paths['/auth/login'].post.security).toBeUndefined();
+  });
+
+  it('requires a bearer token only for category writes', () => {
+    expect(document.paths['/categories'].post.security).toEqual([
+      { bearer: [] },
+    ]);
+    expect(document.paths['/categories/{id}'].patch.security).toEqual([
+      { bearer: [] },
+    ]);
+    expect(document.paths['/categories/{id}'].delete.security).toEqual([
+      { bearer: [] },
+    ]);
+    expect(document.paths['/categories'].get.security).toBeUndefined();
+    expect(document.paths['/categories/{id}'].get.security).toBeUndefined();
+    expect(
+      document.paths['/categories/by-slug/{slug}'].get.security,
+    ).toBeUndefined();
   });
 
   it('never documents credentials in the user representation', () => {

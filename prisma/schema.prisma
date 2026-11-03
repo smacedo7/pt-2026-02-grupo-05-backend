@@ -59,6 +59,8 @@ model PasswordReset {
 model Category {
   id               Int    @id @default(autoincrement())
   name             String @db.VarChar(100)
+  // Stable identifier used in URLs (/categorias/<slug>); lowercase, hyphen-separated.
+  slug             String @unique @db.VarChar(120)
   parentCategoryId Int?   @map("parent_category_id")
 
   parentCategory Category?  @relation("CategoryTree", fields: [parentCategoryId], references: [id], onDelete: Restrict)

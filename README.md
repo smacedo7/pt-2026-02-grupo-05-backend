@@ -166,8 +166,33 @@ Base local: `http://localhost:3001`. Referência completa e testável em `/docs`
 | Trocar minha senha | `PATCH /users/me/password` | Bearer | 204 |
 | Pedir código de recuperação | `POST /auth/forgot-password` | pública | 202 |
 | Redefinir senha com o código | `POST /auth/reset-password` | pública | 204 |
+| Listar categorias | `GET /categories` | pública | 200 |
+| Ver categoria por id | `GET /categories/:id` | pública | 200 |
+| Ver categoria por slug | `GET /categories/by-slug/:slug` | pública | 200 |
+| Criar categoria | `POST /categories` | Bearer | 201 |
+| Editar categoria | `PATCH /categories/:id` | Bearer | 200 |
+| Excluir categoria | `DELETE /categories/:id` | Bearer | 204 |
 
 Não existe listagem de usuários nem consulta por id.
+
+### Categorias
+
+Categorias formam uma árvore: uma categoria pode ter um pai e várias subcategorias. Cada categoria tem um `slug` (ex.: `tecnologia`), usado nas URLs do frontend (`/categorias/tecnologia`).
+
+- **Slug:** letras minúsculas e números, com palavras separadas por um hífen (até 120 caracteres). Na criação, se não for enviado, é derivado do nome, sem acentos. Se o slug gerado já existir, a API responde `409`; nenhum sufixo aleatório é acrescentado.
+- **Edição:** renomear não muda o slug, porque ele aparece em URLs existentes. O slug só muda quando é enviado explicitamente.
+- **Hierarquia:** uma categoria não pode ser pai dela mesma nem ser movida para dentro de uma de suas descendentes (`400`). Envie `parentCategoryId: null` para torná-la raiz.
+- **Exclusão:** só remove categorias sem subcategorias, lojas ou produtos. Caso contrário, responde `409` com o motivo (`CATEGORY_HAS_SUBCATEGORIES`, `CATEGORY_IN_USE_BY_STORES` ou `CATEGORY_IN_USE_BY_PRODUCTS`) e nada é apagado.
+- **Listagem:** `GET /categories` ordena por nome e depois por id. Use `?root=true` para as raízes ou `?parentCategoryId=<id>` para as subcategorias diretas. Os dois filtros juntos respondem `400`.
+
+```bash
+curl -X POST http://localhost:3001/categories \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Celulares","parentCategoryId":1}'
+```
+
+As escritas exigem um token válido de conta existente. Isso é uma proteção temporária: o projeto ainda não tem papéis administrativos, então qualquer conta cadastrada pode criar, editar ou excluir categorias até essa decisão ser tomada.
 
 ### Usuário
 
