@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Prisma } from '@prisma/client';
 import request from 'supertest';
 import { App } from 'supertest/types';
+import { slugify } from './../src/categories/slug';
 import { PrismaService } from './../src/prisma/prisma.service';
 import { createTestApp, resetDatabase } from './create-test-app';
 
@@ -40,7 +41,11 @@ describe('Relations and integrity (e2e)', () => {
 
   async function makeCategory(name: string, parentCategoryId?: number) {
     return prisma.category.create({
-      data: { name, parentCategoryId: parentCategoryId ?? null },
+      data: {
+        name,
+        slug: slugify(name),
+        parentCategoryId: parentCategoryId ?? null,
+      },
     });
   }
 
