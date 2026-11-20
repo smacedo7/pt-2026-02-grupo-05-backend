@@ -172,6 +172,11 @@ Base local: `http://localhost:3001`. Referência completa e testável em `/docs`
 | Criar categoria | `POST /categories` | Bearer | 201 |
 | Editar categoria | `PATCH /categories/:id` | Bearer | 200 |
 | Excluir categoria | `DELETE /categories/:id` | Bearer | 204 |
+| Listar produtos | `GET /products` | pública | 200 |
+| Ver produto | `GET /products/:id` | pública | 200 |
+| Criar produto | `POST /products` | Bearer (dono da loja) | 201 |
+| Editar produto | `PATCH /products/:id` | Bearer (dono da loja) | 200 |
+| Excluir produto | `DELETE /products/:id` | Bearer (dono da loja) | 204 |
 
 Não existe listagem de usuários nem consulta por id.
 
@@ -193,6 +198,27 @@ curl -X POST http://localhost:3001/categories \
 ```
 
 As escritas exigem um token válido de conta existente. Isso é uma proteção temporária: o projeto ainda não tem papéis administrativos, então qualquer conta cadastrada pode criar, editar ou excluir categorias até essa decisão ser tomada.
+
+### Produtos
+
+Um produto pertence a uma loja e a uma categoria. As lojas ainda não têm rotas na API; por isso as escritas dependem de lojas já existentes no banco.
+
+- **Campos:** `storeId` e `categoryId` (ids existentes), `name` (até 255 caracteres, sem espaços nas pontas), `description` (opcional, até 5000 caracteres, aceita `null`), `price` e `stock`. A resposta traz também `id`, `createdAt` e `updatedAt`.
+- **Preço:** número JSON de `0` a `999999.99` com no máximo 2 casas decimais (coluna `DECIMAL(8,2)`). Texto como `"19.99"` é rejeitado e a resposta devolve número.
+- **Estoque:** inteiro de `0` a `2147483647`.
+- **Autorização:** leituras são públicas. Criar, editar e excluir exigem token válido e que a conta seja dona da loja do produto; caso contrário a API responde `403` (`STORE_NOT_OWNED` ao criar, `PRODUCT_NOT_OWNED` ao editar e excluir) e nada muda. Um produto inexistente responde `404` (`PRODUCT_NOT_FOUND`).
+- **Referências:** loja ou categoria inexistentes respondem `400` (`STORE_NOT_FOUND`, `CATEGORY_NOT_FOUND`).
+- **Edição:** envie só os campos a mudar. A loja não pode ser trocada (`storeId` responde `400`). `description: null` remove a descrição.
+- **Exclusão:** remove também as imagens e avaliações do produto (`ON DELETE CASCADE`). A loja e a categoria permanecem.
+- **Listagem:** `GET /products` ordena por nome e depois por id. Filtros: `storeId` e `categoryId` (categoria exata, sem subcategorias). Paginação: `limit` (padrão 50, máximo 100) e `offset`.
+- **Imagens:** fora deste CRUD. A tabela `product_images` existe, mas nenhuma rota de produto envia ou devolve imagens; `images` no corpo responde `400`.
+
+```bash
+curl -X POST http://localhost:3001/products \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"storeId":1,"categoryId":1,"name":"Fone Bluetooth","price":199.9,"stock":25}'
+```
 
 ### Usuário
 
