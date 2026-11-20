@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   WhenPresent,
   WhenPresentOrNull,
-} from '../../categories/dto/category-fields';
+} from '../../common/validators/when-present.decorator';
 import {
   DESCRIPTION_MAX_LENGTH,
   IsEntityId,

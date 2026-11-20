@@ -1,10 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional } from 'class-validator';
+import { WhenPresent } from '../../common/validators/when-present.decorator';
 import {
   IsCategoryId,
   IsCategoryName,
   IsCategorySlug,
-  WhenPresent,
 } from './category-fields';
 
 export class CreateCategoryDto {
