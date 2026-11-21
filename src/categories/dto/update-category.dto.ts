@@ -1,10 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  WhenPresent,
+  WhenPresentOrNull,
+} from '../../common/validators/when-present.decorator';
+import {
   IsCategoryId,
   IsCategoryName,
   IsCategorySlug,
-  WhenPresent,
-  WhenPresentOrNull,
 } from './category-fields';
 
 // Changing the name never changes the slug, because slugs appear in existing

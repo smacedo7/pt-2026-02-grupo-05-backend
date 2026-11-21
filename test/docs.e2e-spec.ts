@@ -50,6 +50,11 @@ describe('API documentation (e2e)', () => {
         'GET /categories/{id}',
         'PATCH /categories/{id}',
         'POST /categories',
+        'DELETE /products/{id}',
+        'GET /products',
+        'GET /products/{id}',
+        'PATCH /products/{id}',
+        'POST /products',
         'GET /users/me',
         'PATCH /users/me',
         'PATCH /users/me/password',
@@ -89,6 +94,26 @@ describe('API documentation (e2e)', () => {
     expect(
       document.paths['/categories/by-slug/{slug}'].get.security,
     ).toBeUndefined();
+  });
+
+  it('requires a bearer token and documents 403 only for product writes', () => {
+    expect(document.paths['/products'].post.security).toEqual([{ bearer: [] }]);
+    expect(document.paths['/products/{id}'].patch.security).toEqual([
+      { bearer: [] },
+    ]);
+    expect(document.paths['/products/{id}'].delete.security).toEqual([
+      { bearer: [] },
+    ]);
+    expect(document.paths['/products'].get.security).toBeUndefined();
+    expect(document.paths['/products/{id}'].get.security).toBeUndefined();
+
+    expect(document.paths['/products'].post.responses).toHaveProperty('403');
+    expect(document.paths['/products/{id}'].patch.responses).toHaveProperty(
+      '403',
+    );
+    expect(document.paths['/products/{id}'].delete.responses).toHaveProperty(
+      '403',
+    );
   });
 
   it('never documents credentials in the user representation', () => {
