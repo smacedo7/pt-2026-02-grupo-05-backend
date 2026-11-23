@@ -184,11 +184,34 @@ describe('ProductsService', () => {
         row({
           store: { id: 3, name: 'Loja' },
           category: { id: 2, name: 'Tecnologia', slug: 'tecnologia' },
+          images: [
+            { id: 4, imageUrl: 'https://exemplo.com/a.png', sortOrder: 0 },
+            { id: 5, imageUrl: 'https://exemplo.com/b.png', sortOrder: 2 },
+          ],
         }),
       );
       const result = await service.findOne(7);
       expect(result.store).toEqual({ id: 3, name: 'Loja' });
       expect(result.category.slug).toBe('tecnologia');
+      expect(result.images).toEqual([
+        { id: 4, imageUrl: 'https://exemplo.com/a.png', sortOrder: 0 },
+        { id: 5, imageUrl: 'https://exemplo.com/b.png', sortOrder: 2 },
+      ]);
+    });
+
+    it('asks for the images ordered by sortOrder, then id', async () => {
+      db.product.findUnique.mockResolvedValue(
+        row({
+          store: { id: 3, name: 'Loja' },
+          category: { id: 2, name: 'Tecnologia', slug: 'tecnologia' },
+          images: [],
+        }),
+      );
+      const result = await service.findOne(7);
+      expect(result.images).toEqual([]);
+      expect(
+        db.product.findUnique.mock.calls[0][0].select.images.orderBy,
+      ).toEqual([{ sortOrder: 'asc' }, { id: 'asc' }]);
     });
 
     it('answers 404 PRODUCT_NOT_FOUND', async () => {
@@ -203,6 +226,7 @@ describe('ProductsService', () => {
     const detail = row({
       store: { id: 3, name: 'Loja' },
       category: { id: 2, name: 'Tecnologia', slug: 'tecnologia' },
+      images: [],
     });
 
     it('updates only the fields sent, including description null', async () => {

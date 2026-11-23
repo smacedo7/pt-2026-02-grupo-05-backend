@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { IMAGE_ORDER } from '../product-images/product-images.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import {
   DEFAULT_LIMIT,
@@ -42,6 +43,10 @@ const DETAIL_SELECT = {
   ...SUMMARY_SELECT,
   store: { select: { id: true, name: true } },
   category: { select: { id: true, name: true, slug: true } },
+  images: {
+    select: { id: true, imageUrl: true, sortOrder: true },
+    orderBy: IMAGE_ORDER,
+  },
 } satisfies Prisma.ProductSelect;
 
 type ProductSummary = Prisma.ProductGetPayload<{
@@ -259,6 +264,11 @@ function toDetail(product: ProductDetail): ProductDetailResponseDto {
       name: product.category.name,
       slug: product.category.slug,
     },
+    images: product.images.map((image) => ({
+      id: image.id,
+      imageUrl: image.imageUrl,
+      sortOrder: image.sortOrder,
+    })),
   };
 }
 
