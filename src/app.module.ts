@@ -6,6 +6,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProductImagesModule } from './product-images/product-images.module';
 import { ProductsModule } from './products/products.module';
+import { StoreRatingsModule } from './store-ratings/store-ratings.module';
 import { StoresModule } from './stores/stores.module';
 import { UsersModule } from './users/users.module';
 
@@ -19,6 +20,7 @@ import { UsersModule } from './users/users.module';
     ProductsModule,
     ProductImagesModule,
     StoresModule,
+    StoreRatingsModule,
   ],
   providers: [
     {
