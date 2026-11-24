@@ -48,10 +48,28 @@ export class ProductCategoryReferenceDto {
   slug: string;
 }
 
+export class ProductImageReferenceDto {
+  @ApiProperty({ example: 1 })
+  id: number;
+
+  @ApiProperty({ example: 'https://cdn.exemplo.com/produtos/fone-frente.jpg' })
+  imageUrl: string;
+
+  @ApiProperty({ example: 0 })
+  sortOrder: number;
+}
+
 export class ProductDetailResponseDto extends ProductResponseDto {
   @ApiProperty({ type: StoreReferenceDto })
   store: StoreReferenceDto;
 
   @ApiProperty({ type: ProductCategoryReferenceDto })
   category: ProductCategoryReferenceDto;
+
+  @ApiProperty({
+    type: [ProductImageReferenceDto],
+    description:
+      'Ordered by sortOrder, then id; empty when the product has no image.',
+  })
+  images: ProductImageReferenceDto[];
 }

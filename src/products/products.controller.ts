@@ -106,7 +106,7 @@ export class ProductsController {
   @ApiOperation({
     summary: 'Create a product',
     description:
-      'Only the owner of the store can add products to it. Images are not part of this endpoint.',
+      'Only the owner of the store can add products to it. Images are managed in /products/:productId/images.',
   })
   @ApiCreatedResponse({ type: ProductResponseDto })
   @ApiBadRequestResponse(REFERENCE_NOT_FOUND)
@@ -135,7 +135,8 @@ export class ProductsController {
   @Get(':id')
   @ApiOperation({
     summary: 'Read a product',
-    description: 'Public. Includes the store and the category.',
+    description:
+      'Public. Includes the store, the category and the images (ordered by sortOrder, then id).',
   })
   @ApiParam({ name: 'id', example: 1 })
   @ApiOkResponse({ type: ProductDetailResponseDto })
