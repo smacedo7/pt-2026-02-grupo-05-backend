@@ -177,6 +177,11 @@ Base local: `http://localhost:3001`. Referência completa e testável em `/docs`
 | Criar produto | `POST /products` | Bearer (dono da loja) | 201 |
 | Editar produto | `PATCH /products/:id` | Bearer (dono da loja) | 200 |
 | Excluir produto | `DELETE /products/:id` | Bearer (dono da loja) | 204 |
+| Listar lojas | `GET /stores` | pública | 200 |
+| Ver loja | `GET /stores/:id` | pública | 200 |
+| Criar loja | `POST /stores` | Bearer | 201 |
+| Editar loja | `PATCH /stores/:id` | Bearer (dono da loja) | 200 |
+| Excluir loja | `DELETE /stores/:id` | Bearer (dono da loja) | 204 |
 
 Não existe listagem de usuários nem consulta por id.
 
@@ -201,7 +206,7 @@ As escritas exigem um token válido de conta existente. Isso é uma proteção t
 
 ### Produtos
 
-Um produto pertence a uma loja e a uma categoria. As lojas ainda não têm rotas na API; por isso as escritas dependem de lojas já existentes no banco.
+Um produto pertence a uma loja e a uma categoria. As lojas são criadas e geridas pelas rotas de [Lojas](#lojas).
 
 - **Campos:** `storeId` e `categoryId` (ids existentes), `name` (até 255 caracteres, sem espaços nas pontas), `description` (opcional, até 5000 caracteres, aceita `null`), `price` e `stock`. A resposta traz também `id`, `createdAt` e `updatedAt`.
 - **Preço:** número JSON de `0` a `999999.99` com no máximo 2 casas decimais (coluna `DECIMAL(8,2)`). Texto como `"19.99"` é rejeitado e a resposta devolve número.
@@ -218,6 +223,24 @@ curl -X POST http://localhost:3001/products \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"storeId":1,"categoryId":1,"name":"Fone Bluetooth","price":199.9,"stock":25}'
+```
+
+### Lojas
+
+Cobre RF31 a RF35 (ver, cadastrar, excluir, editar e listar lojas; US23 a US26). A página visual da loja (RF30/US22) é do frontend: ela usa `GET /stores/:id` e `GET /products?storeId=<id>`.
+
+- **Campos:** `categoryId` (id existente) e `name` (até 255 caracteres, sem espaços nas pontas) são obrigatórios. `description` (até 5000 caracteres), `logoUrl`, `bannerUrl` e `stickerUrl` são opcionais e aceitam `null`. As três imagens são endereços `http`/`https` (até 255 caracteres, sem usuário e senha na URL); o envio de arquivos é outra tarefa. A resposta traz também `id`, `userId` (dono), `createdAt` e `updatedAt`; o detalhe traz ainda `category` (`id`, `name`, `slug`).
+- **Dono:** é sempre a conta do token. `userId` no corpo responde `400`, tanto ao criar quanto ao editar, então não dá para criar loja em nome de outra conta nem transferir uma loja. Uma conta pode ter várias lojas, e nomes repetidos são permitidos.
+- **Autorização:** leituras são públicas. Criar exige token válido; editar e excluir exigem também que a conta seja dona da loja, caso contrário `403` (`STORE_NOT_OWNED`) e nada muda. Loja inexistente responde `404` (`STORE_NOT_FOUND`); categoria inexistente responde `400` (`CATEGORY_NOT_FOUND`). Conflitos de concorrência respondem `409` (`REFERENCE_CHANGED` ou `WRITE_CONFLICT`).
+- **Edição:** envie só os campos a mudar. `description`, `logoUrl`, `bannerUrl` e `stickerUrl` com `null` removem o valor; `name` e `categoryId` não aceitam `null`. Corpo vazio devolve o estado atual.
+- **Exclusão:** é definitiva e remove, na mesma transação, os produtos da loja (com as imagens e avaliações deles), as avaliações da loja e os comentários dessas avaliações (`ON DELETE CASCADE`). A categoria e as contas permanecem. Depois disso, a categoria da loja pode ser excluída, pois deixa de estar em uso por ela.
+- **Listagem:** `GET /stores` ordena por nome e depois por id. Filtros: `categoryId` (categoria exata, sem subcategorias) e `userId` (lojas de um dono, útil para "minhas lojas"). Paginação: `limit` (padrão 50, máximo 100) e `offset`.
+
+```bash
+curl -X POST http://localhost:3001/stores \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"categoryId":1,"name":"Loja do João","description":"Eletrônicos"}'
 ```
 
 ### Usuário
