@@ -6,7 +6,9 @@ import { PrismaService } from './../src/prisma/prisma.service';
 import { createTestApp, resetDatabase } from './create-test-app';
 
 // Real rows, real foreign keys and real tokens: nothing is simulated. Stores
-// have no API yet, so they are created straight in the database.
+// are created straight in the database, even though the stores API now exists,
+// to set up the product test data in isolation, without depending on the
+// routes of another feature.
 describe('Products (e2e)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaService;
