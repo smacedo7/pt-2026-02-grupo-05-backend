@@ -8,6 +8,7 @@ import { ProductImagesModule } from './product-images/product-images.module';
 import { ProductsModule } from './products/products.module';
 import { StoresModule } from './stores/stores.module';
 import { UsersModule } from './users/users.module';
+import { CommentsModule } from './comment/comments.module'; 
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { UsersModule } from './users/users.module';
     ProductsModule,
     ProductImagesModule,
     StoresModule,
+    CommentsModule,
   ],
   providers: [
     {
