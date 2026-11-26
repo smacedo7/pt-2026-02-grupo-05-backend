@@ -361,6 +361,8 @@ Situação conferida em 26/11/2026:
 - Na branch `dev` do frontend (`1d6982f`), a home consulta `/products?category=`, que a API recusa, e a página de categoria usa dados fixos. **Os produtos da seed não aparecem.**
 - Na branch `feature/integracao-produtos` (`e0ccf45`, ainda não integrada), a página de categoria inclui as subcategorias diretas. **A home não inclui subcategorias**: os três produtos da Repiit aparecem só na página de Eletrônicos. A home mostra até 5 produtos por categoria raiz.
 
+**Pendência:** enquanto a `dev` do frontend não consumir a API de produtos, ela não exibe os produtos da seed. A branch `feature/integracao-produtos` precisa de um pull request próprio no repositório do frontend; até 26/11/2026 nenhum havia sido aberto.
+
 ### Produtos
 
 Um produto pertence a uma loja e a uma categoria. As lojas são criadas e geridas pelas rotas de [Lojas](#lojas).
