@@ -258,6 +258,112 @@ describe('Demo seed (e2e)', () => {
     expect(await snapshot()).toEqual(before);
   });
 
+  it('leaves stores and products fully manageable through the API', async () => {
+    await run();
+    const signIn = async (email: string) => {
+      const response = await http()
+        .post('/auth/login')
+        .send({ email, password: PASSWORD })
+        .expect(200);
+      const { accessToken } = response.body as { accessToken: string };
+      return { Authorization: `Bearer ${accessToken}` };
+    };
+    const owner = await signIn('demo.rapiit@example.com');
+    const otherOwner = await signIn('demo.hobby@example.com');
+    const category = await prisma.category.findUniqueOrThrow({
+      where: { slug: 'eletronicos' },
+    });
+    const seededStore = await prisma.store.findFirstOrThrow({
+      where: { name: 'Rapiit' },
+    });
+    const seededProduct = await prisma.product.findFirstOrThrow({
+      where: { name: 'Computador Lenovo' },
+    });
+
+    // A new store and a new product, from creation to deletion.
+    const store = await http()
+      .post('/stores')
+      .set(owner)
+      .send({ categoryId: category.id, name: 'Loja nova' })
+      .expect(201);
+    const storeId = (store.body as { id: number }).id;
+    await http()
+      .patch(`/stores/${storeId}`)
+      .set(owner)
+      .send({ name: 'Loja editada' })
+      .expect(200);
+    const product = await http()
+      .post('/products')
+      .set(owner)
+      .send({
+        storeId,
+        categoryId: category.id,
+        name: 'Produto novo',
+        price: 10.5,
+        stock: 3,
+      })
+      .expect(201);
+    const productId = (product.body as { id: number }).id;
+    const edited = await http()
+      .patch(`/products/${productId}`)
+      .set(owner)
+      .send({ price: 12.75, stock: 0 })
+      .expect(200);
+    expect(edited.body).toMatchObject({ price: 12.75, stock: 0 });
+    await http().delete(`/products/${productId}`).set(owner).expect(204);
+    await http().get(`/products/${productId}`).expect(404);
+    await http().delete(`/stores/${storeId}`).set(owner).expect(204);
+    await http().get(`/stores/${storeId}`).expect(404);
+
+    // Only the owner changes a seeded record.
+    await http()
+      .patch(`/stores/${seededStore.id}`)
+      .set(otherOwner)
+      .send({ name: 'Invasão' })
+      .expect(403);
+    await http()
+      .delete(`/products/${seededProduct.id}`)
+      .set(otherOwner)
+      .expect(403);
+
+    // Seeded records are edited and deleted like any other.
+    await http()
+      .patch(`/stores/${seededStore.id}`)
+      .set(owner)
+      .send({ description: 'Editada pela API' })
+      .expect(200);
+    await http()
+      .patch(`/products/${seededProduct.id}`)
+      .set(owner)
+      .send({ price: 3500, stock: 2 })
+      .expect(200);
+    const phone = await prisma.product.findFirstOrThrow({
+      where: { name: 'iPhone 15' },
+    });
+    const phoneOwner = await signIn('demo.bersay@example.com');
+    await http().delete(`/products/${phone.id}`).set(phoneOwner).expect(204);
+    const hobby = await prisma.store.findFirstOrThrow({
+      where: { name: 'Hobby' },
+    });
+    await http().delete(`/stores/${hobby.id}`).set(otherOwner).expect(204);
+    expect(await prisma.product.count()).toBe(3); // its product went with it
+
+    // A new run recreates what was deleted and keeps what was edited.
+    await expect(run()).resolves.toMatchObject({
+      usersCreated: 0,
+      productsCreated: 2,
+    });
+    expect(await prisma.store.count()).toBe(3);
+    expect(await prisma.product.count()).toBe(5);
+    await expect(
+      prisma.store.findUniqueOrThrow({ where: { id: seededStore.id } }),
+    ).resolves.toMatchObject({ description: 'Editada pela API' });
+    const kept = await prisma.product.findUniqueOrThrow({
+      where: { id: seededProduct.id },
+    });
+    expect([kept.price.toNumber(), kept.stock]).toEqual([3500, 2]);
+  });
+
   it('is run by "prisma db seed" only when asked, never in production', async () => {
     // load-test-env.ts already guaranteed DATABASE_URL points to a _test database.
     const seed = (env: Record<string, string>) =>
