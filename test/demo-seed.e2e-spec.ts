@@ -17,6 +17,16 @@ const EXPECTED_PRODUCTS = [
   ['Computador Lenovo', '3899.99', true, 'Repiit', 'notebooks'],
   ['Computador Samsung', '8549.99', false, 'Repiit', 'notebooks'],
   ['Smart TV Philips', '1229.00', true, 'Repiit', 'tvs'],
+  ['iPhone 15', '4769.10', true, 'Electree', 'eletronicos'],
+  ['Xbox Series X', '3599.99', true, 'Electree', 'eletronicos'],
+  ['Macbook Air', '15899.99', true, 'Electree', 'eletronicos'],
+  ['iPhone 16', '4598.99', false, 'Electree', 'eletronicos'],
+  ['S25 Ultra', '5769.10', true, 'Electree', 'eletronicos'],
+  ['iPad', '7859.00', true, 'Electree', 'eletronicos'],
+  ['Headset Gamer', '899.99', false, 'Electree', 'eletronicos'],
+  ['Nintendo Switch 2', '4799.99', false, 'Electree', 'eletronicos'],
+  ['JBL', '1399.00', true, 'Electree', 'eletronicos'],
+  ['Xbox Series S', '1499.99', true, 'Electree', 'eletronicos'],
 ];
 
 describe('Demo seed options', () => {
