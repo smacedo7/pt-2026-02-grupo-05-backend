@@ -248,7 +248,16 @@ SEED_DEMO="true"
 SEED_DEMO_PASSWORD="<senha local com 8 caracteres ou mais>"
 ```
 
-Depois rode `npx prisma db seed`. A saída informa o id de cada loja (a página fica em `/lojas/<id>` no frontend).
+Depois aplique as migrações pendentes e rode a seed:
+
+```bash
+npx prisma migrate deploy
+npx prisma db seed
+```
+
+A saída informa o id de cada loja (a página fica em `/lojas/<id>` no frontend). Para entrar com uma conta de demonstração, use o e-mail dela e a senha definida em `SEED_DEMO_PASSWORD`.
+
+**Regra de estoque da demonstração:** o Figma mostra apenas "disponível" ou "indisponível". Produto disponível recebe estoque **10**; indisponível recebe **0**.
 
 | O que cria | Conteúdo |
 | --- | --- |
@@ -269,9 +278,10 @@ Proteções e comportamento:
 - Sem `SEED_DEMO="true"` (exatamente esse valor), a seed cria apenas as categorias oficiais.
 - É recusada, sem gravar nada, com `NODE_ENV="production"`, com banco fora de `localhost` ou sem senha válida. A checagem de host não detecta um túnel que exponha um servidor remoto em `localhost`.
 - Pode ser repetida: só cria o que falta e não altera nem apaga registros. Lojas são reconhecidas por conta e nome, e produtos por loja e nome; renomear um deles faz a próxima execução criar outro. Trocar a senha na variável não muda contas já criadas.
+- Lojas e produtos semeados são registros comuns: a conta proprietária os edita e exclui pela API. Uma nova execução recria o que foi excluído e mantém o que foi editado (exceto o nome, como descrito acima). Excluir uma loja exclui os produtos dela.
 - Se uma conta existente usar só o e-mail ou só o nome de usuário de demonstração, ou se um dos slugs já existir fora de Eletrônicos, nada de demonstração é gravado (as categorias oficiais permanecem).
 
-Limitações: "Rapiit" e "Bersay" são leitura provisória dos logos. O estoque 10 é arbitrário (o Figma só mostra disponível ou indisponível). Não há imagens, logos, avaliações nem comentários. Os demais produtos do Figma ficam de fora enquanto preço, disponibilidade e loja não forem confirmados.
+Limitações: "Rapiit" e "Bersay" são leitura provisória dos logos. Não há imagens, logos, avaliações nem comentários. Os demais produtos do Figma ficam de fora enquanto preço, disponibilidade e loja não forem confirmados.
 
 ### Produtos
 
