@@ -102,7 +102,7 @@ export async function seedDemo(
       let usersCreated = 0;
       const stores: DemoSummary['stores'] = [];
       const storeIds = new Map<string, number>();
-      for (const { key, name } of DEMO_STORES) {
+      for (const { key, name, categorySlug } of DEMO_STORES) {
         const owner = await findOrCreateOwner(tx, key, name, passwordHash);
         if (owner.created) usersCreated += 1;
 
@@ -111,12 +111,17 @@ export async function seedDemo(
           orderBy: { id: 'asc' },
           select: { id: true },
         });
-        const store =
-          existing ??
-          (await tx.store.create({
-            data: { userId: owner.id, categoryId: parent.id, name },
+        let store = existing;
+        if (!store) {
+          const category = await tx.category.findUniqueOrThrow({
+            where: { slug: categorySlug },
             select: { id: true },
-          }));
+          });
+          store = await tx.store.create({
+            data: { userId: owner.id, categoryId: category.id, name },
+            select: { id: true },
+          });
+        }
         stores.push({ id: store.id, name, created: existing === null });
         storeIds.set(key, store.id);
       }

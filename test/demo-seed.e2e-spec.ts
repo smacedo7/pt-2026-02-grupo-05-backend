@@ -93,7 +93,7 @@ describe('Demo seed (e2e)', () => {
 
     expect(summary).toMatchObject({
       subcategoriesCreated: 5,
-      usersCreated: 3,
+      usersCreated: 15,
     });
     const parent = await http()
       .get('/categories/by-slug/eletronicos')
@@ -114,16 +114,28 @@ describe('Demo seed (e2e)', () => {
         store.logoUrl,
       ]),
     ).toEqual([
+      ['CJR', 'demo.cjr@example.com', 'mercado', null],
+      ['Maumar', 'demo.maumar@example.com', 'mercado', null],
+      ['Mini Reno', 'demo.mini-reno@example.com', 'casa', null],
+      ['Rare Beauty', 'demo.rare-beauty@example.com', 'beleza', null],
+      ['The Cro Brew', 'demo.the-cro-brew@example.com', 'mercado', null],
+      ['Amoca', 'demo.amoca@example.com', 'moda', null],
+      ['Creamy Skincare', 'demo.creamy-skincare@example.com', 'beleza', null],
+      ['SneakerStore', 'demo.sneakerstore@example.com', 'moda', null],
+      ['d’carts & baskets', 'demo.dcarts-baskets@example.com', 'mercado', null],
       ['Repiit', 'demo.repiit@example.com', 'eletronicos', null],
-      ['Bersay', 'demo.bersay@example.com', 'eletronicos', null],
-      ['Hobby', 'demo.hobby@example.com', 'eletronicos', null],
+      ['Fluffy House', 'demo.fluffy-house@example.com', 'casa', null],
+      ['Melina Couture', 'demo.melina-couture@example.com', 'moda', null],
+      ['Electree', 'demo.electree@example.com', 'eletronicos', null],
+      ['Roots', 'demo.roots@example.com', 'beleza', null],
+      ['Whiskers', 'demo.whiskers@example.com', 'moda', null],
     ]);
-    expect(await prisma.user.count()).toBe(3);
+    expect(await prisma.user.count()).toBe(15);
     await expectNoExtras();
   });
 
   it('creates the products with the price and availability of the frame', async () => {
-    await expect(run()).resolves.toMatchObject({ productsCreated: 5 });
+    await expect(run()).resolves.toMatchObject({ productsCreated: 3 });
 
     const products = await prisma.product.findMany({
       include: { store: true, category: true },
@@ -141,9 +153,7 @@ describe('Demo seed (e2e)', () => {
     ).toEqual([
       ['Computador Lenovo', '3899.99', true, 'Repiit', 'notebooks'],
       ['Computador Samsung', '8549.99', false, 'Repiit', 'notebooks'],
-      ['iPhone 15', '4769.10', true, 'Bersay', 'celulares'],
       ['Smart TV Philips', '1229.00', true, 'Repiit', 'tvs'],
-      ['Xbox Series X', '3599.99', true, 'Hobby', 'outros'],
     ]);
 
     const notebooks = await prisma.category.findUniqueOrThrow({
@@ -169,7 +179,7 @@ describe('Demo seed (e2e)', () => {
 
     await http()
       .post('/auth/login')
-      .send({ email: 'demo.hobby@example.com', password: PASSWORD })
+      .send({ email: 'demo.electree@example.com', password: PASSWORD })
       .expect(200);
     for (const user of await prisma.user.findMany()) {
       expect(user.passwordHash).not.toContain(PASSWORD);
@@ -179,11 +189,11 @@ describe('Demo seed (e2e)', () => {
   it('creates nothing and changes nothing when run again', async () => {
     await run();
     await prisma.store.updateMany({
-      where: { name: 'Hobby' },
+      where: { name: 'CJR' },
       data: { description: 'edited by hand' },
     });
     await prisma.product.updateMany({
-      where: { name: 'iPhone 15' },
+      where: { name: 'Smart TV Philips' },
       data: { price: '1.00', stock: 0 },
     });
     const before = await snapshot();
@@ -203,9 +213,9 @@ describe('Demo seed (e2e)', () => {
     await Promise.all([run(), run()]);
 
     expect(await prisma.category.count()).toBe(13);
-    expect(await prisma.user.count()).toBe(3);
-    expect(await prisma.store.count()).toBe(3);
-    expect(await prisma.product.count()).toBe(5);
+    expect(await prisma.user.count()).toBe(15);
+    expect(await prisma.store.count()).toBe(15);
+    expect(await prisma.product.count()).toBe(3);
   });
 
   it('keeps the data that already exists', async () => {
@@ -221,7 +231,7 @@ describe('Demo seed (e2e)', () => {
       where: { slug: 'eletronicos' },
     });
     const store = await prisma.store.create({
-      data: { userId: user.id, categoryId: category.id, name: 'Hobby' },
+      data: { userId: user.id, categoryId: category.id, name: 'CJR' },
     });
 
     await run();
@@ -229,12 +239,12 @@ describe('Demo seed (e2e)', () => {
     expect(await prisma.store.findUnique({ where: { id: store.id } })).toEqual(
       store,
     );
-    expect(await prisma.store.count()).toBe(4);
+    expect(await prisma.store.count()).toBe(16);
   });
 
   it.each([
-    { username: 'demo.hobby', email: 'real@example.com' },
-    { username: 'real', email: 'demo.hobby@example.com' },
+    { username: 'demo.cjr', email: 'real@example.com' },
+    { username: 'real', email: 'demo.cjr@example.com' },
   ])(
     'writes nothing when an account matches only partly ($username)',
     async (account) => {
@@ -269,7 +279,7 @@ describe('Demo seed (e2e)', () => {
       return { Authorization: `Bearer ${accessToken}` };
     };
     const owner = await signIn('demo.repiit@example.com');
-    const otherOwner = await signIn('demo.hobby@example.com');
+    const otherOwner = await signIn('demo.electree@example.com');
     const category = await prisma.category.findUniqueOrThrow({
       where: { slug: 'eletronicos' },
     });
@@ -312,8 +322,22 @@ describe('Demo seed (e2e)', () => {
     expect(edited.body).toMatchObject({ price: 12.75, stock: 0 });
     await http().delete(`/products/${productId}`).set(owner).expect(204);
     await http().get(`/products/${productId}`).expect(404);
+    const last = await http()
+      .post('/products')
+      .set(owner)
+      .send({
+        storeId,
+        categoryId: category.id,
+        name: 'Outro produto',
+        price: 1,
+        stock: 1,
+      })
+      .expect(201);
     await http().delete(`/stores/${storeId}`).set(owner).expect(204);
     await http().get(`/stores/${storeId}`).expect(404);
+    await http()
+      .get(`/products/${(last.body as { id: number }).id}`)
+      .expect(404); // its product went with it
 
     // Only the owner changes a seeded record.
     await http()
@@ -337,24 +361,22 @@ describe('Demo seed (e2e)', () => {
       .set(owner)
       .send({ price: 3500, stock: 2 })
       .expect(200);
-    const phone = await prisma.product.findFirstOrThrow({
-      where: { name: 'iPhone 15' },
+    const television = await prisma.product.findFirstOrThrow({
+      where: { name: 'Smart TV Philips' },
     });
-    const phoneOwner = await signIn('demo.bersay@example.com');
-    await http().delete(`/products/${phone.id}`).set(phoneOwner).expect(204);
-    const hobby = await prisma.store.findFirstOrThrow({
-      where: { name: 'Hobby' },
+    await http().delete(`/products/${television.id}`).set(owner).expect(204);
+    const electree = await prisma.store.findFirstOrThrow({
+      where: { name: 'Electree' },
     });
-    await http().delete(`/stores/${hobby.id}`).set(otherOwner).expect(204);
-    expect(await prisma.product.count()).toBe(3); // its product went with it
+    await http().delete(`/stores/${electree.id}`).set(otherOwner).expect(204);
 
     // A new run recreates what was deleted and keeps what was edited.
     await expect(run()).resolves.toMatchObject({
       usersCreated: 0,
-      productsCreated: 2,
+      productsCreated: 1,
     });
-    expect(await prisma.store.count()).toBe(3);
-    expect(await prisma.product.count()).toBe(5);
+    expect(await prisma.store.count()).toBe(15);
+    expect(await prisma.product.count()).toBe(3);
     await expect(
       prisma.store.findUniqueOrThrow({ where: { id: seededStore.id } }),
     ).resolves.toMatchObject({ description: 'Editada pela API' });
@@ -384,10 +406,10 @@ describe('Demo seed (e2e)', () => {
 
     const output = seed(demo);
     expect(output).not.toContain(PASSWORD);
-    expect(await prisma.store.count()).toBe(3);
-    expect(await prisma.product.count()).toBe(5);
+    expect(await prisma.store.count()).toBe(15);
+    expect(await prisma.product.count()).toBe(3);
 
     expect(seed(demo)).toContain('0 subcategories, 0 accounts and 0 products');
-    expect(await prisma.product.count()).toBe(5);
+    expect(await prisma.product.count()).toBe(3);
   }, 120000);
 });

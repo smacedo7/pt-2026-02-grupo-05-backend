@@ -14,15 +14,25 @@ export const DEMO_SUBCATEGORIES = [
   { name: 'Outros', slug: 'outros' },
 ] as const;
 
-// Names read from the logos on the product cards of the frame. "Repiit" is in
-// the store list of the Figma file; "Bersay" is a provisional reading of a
-// stylized logo. The name identifies the store on later runs, so fix it here
-// before seeding a database.
-// "key" builds the owner account: demo.<key>@example.com.
+// The store list of the Figma file, each with its category. The name identifies
+// the store on later runs. "key" builds the owner account:
+// demo.<key>@example.com.
 export const DEMO_STORES = [
-  { key: 'repiit', name: 'Repiit' },
-  { key: 'bersay', name: 'Bersay' },
-  { key: 'hobby', name: 'Hobby' },
+  { key: 'cjr', name: 'CJR', categorySlug: 'mercado' },
+  { key: 'maumar', name: 'Maumar', categorySlug: 'mercado' },
+  { key: 'mini-reno', name: 'Mini Reno', categorySlug: 'casa' },
+  { key: 'rare-beauty', name: 'Rare Beauty', categorySlug: 'beleza' },
+  { key: 'the-cro-brew', name: 'The Cro Brew', categorySlug: 'mercado' },
+  { key: 'amoca', name: 'Amoca', categorySlug: 'moda' },
+  { key: 'creamy-skincare', name: 'Creamy Skincare', categorySlug: 'beleza' },
+  { key: 'sneakerstore', name: 'SneakerStore', categorySlug: 'moda' },
+  { key: 'dcarts-baskets', name: 'd’carts & baskets', categorySlug: 'mercado' },
+  { key: 'repiit', name: 'Repiit', categorySlug: 'eletronicos' },
+  { key: 'fluffy-house', name: 'Fluffy House', categorySlug: 'casa' },
+  { key: 'melina-couture', name: 'Melina Couture', categorySlug: 'moda' },
+  { key: 'electree', name: 'Electree', categorySlug: 'eletronicos' },
+  { key: 'roots', name: 'Roots', categorySlug: 'beleza' },
+  { key: 'whiskers', name: 'Whiskers', categorySlug: 'moda' },
 ] as const;
 
 // Only the products whose price, availability and store are visible in the frame.
@@ -51,24 +61,10 @@ export const DEMO_PRODUCTS = [
     stock: UNAVAILABLE,
   },
   {
-    storeKey: 'bersay',
-    subcategorySlug: 'celulares',
-    name: 'iPhone 15',
-    price: '4769.10',
-    stock: AVAILABLE,
-  },
-  {
     storeKey: 'repiit',
     subcategorySlug: 'tvs',
     name: 'Smart TV Philips',
     price: '1229.00',
-    stock: AVAILABLE,
-  },
-  {
-    storeKey: 'hobby',
-    subcategorySlug: 'outros',
-    name: 'Xbox Series X',
-    price: '3599.99',
     stock: AVAILABLE,
   },
 ] as const;
