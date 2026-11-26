@@ -56,6 +56,14 @@ No macOS com Homebrew, o usuário do banco é o seu usuário do sistema, sem sen
    npx prisma migrate dev
    ```
 
+6. Insira as categorias oficiais no banco de desenvolvimento.
+
+   ```bash
+   npx prisma db seed
+   ```
+
+   O comando pode ser repetido: ele só cria o que falta. Veja [Categorias oficiais](#categorias-oficiais).
+
 Os arquivos `.env` e `.env.test` são locais. O `.gitignore` ignora qualquer arquivo `.env*`, exceto o modelo `.env.example`, que só tem valores de exemplo; nunca force a inclusão dos demais em um commit.
 
 ## Executar
@@ -99,6 +107,7 @@ Os testes e2e apagam dados. Por segurança, só rodam se `DATABASE_URL` (lida de
 prisma/
   schema.prisma        models do banco
   migrations/          histórico de migrações (versionado)
+  seed.ts              dados iniciais (npx prisma db seed)
 src/
   prisma/              PrismaService, disponível em todos os módulos
   password/            PasswordService: hash e verificação de senha
@@ -208,6 +217,27 @@ curl -X POST http://localhost:3001/categories \
 ```
 
 As escritas exigem um token válido de conta existente. Isso é uma proteção temporária: o projeto ainda não tem papéis administrativos, então qualquer conta cadastrada pode criar, editar ou excluir categorias até essa decisão ser tomada.
+
+#### Categorias oficiais
+
+São as categorias exibidas na página inicial do frontend, criadas como raízes e sem subcategorias:
+
+| Nome | Slug |
+| --- | --- |
+| Mercado | `mercado` |
+| Farmácia | `farmacia` |
+| Beleza | `beleza` |
+| Moda | `moda` |
+| Eletrônicos | `eletronicos` |
+| Jogos | `jogos` |
+| Brinquedos | `brinquedos` |
+| Casa | `casa` |
+
+```bash
+npx prisma db seed
+```
+
+A lista fica em `src/categories/official-categories.ts`. A seed usa o banco de `DATABASE_URL` e insere apenas os slugs que ainda não existem, sem alterar nem apagar categorias já cadastradas. Em produção, rode depois de `npx prisma migrate deploy`, em um ambiente com as dependências de desenvolvimento instaladas (a seed é executada com `ts-node`). O frontend escolhe a imagem de cada categoria pelo slug.
 
 ### Produtos
 
