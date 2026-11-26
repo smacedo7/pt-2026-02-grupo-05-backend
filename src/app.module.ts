@@ -4,8 +4,11 @@ import { APP_PIPE } from '@nestjs/core';
 import { AuthModule } from './auth/auth.module';
 import { CategoriesModule } from './categories/categories.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ProductImagesModule } from './product-images/product-images.module';
+import { ProductsModule } from './products/products.module';
+import { StoresModule } from './stores/stores.module';
 import { UsersModule } from './users/users.module';
-import { RatingsModule } from './ratings/ratings.module';
+import { CommentsModule } from './comment/comments.module'; 
 
 @Module({
   imports: [
@@ -14,7 +17,10 @@ import { RatingsModule } from './ratings/ratings.module';
     UsersModule,
     AuthModule,
     CategoriesModule,
-    RatingsModule,
+    ProductsModule,
+    ProductImagesModule,
+    StoresModule,
+    CommentsModule,
   ],
   providers: [
     {

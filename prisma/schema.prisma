@@ -176,6 +176,7 @@ model RatingComment {
   userId          Int      @map("user_id")
   storeRatingId   Int?     @map("store_rating_id")
   productRatingId Int?     @map("product_rating_id")
+  parentId        Int?     @map("parent_id")
   content         String   @db.Text
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -183,9 +184,14 @@ model RatingComment {
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   storeRating   StoreRating?   @relation(fields: [storeRatingId], references: [id], onDelete: Cascade)
   productRating ProductRating? @relation(fields: [productRatingId], references: [id], onDelete: Cascade)
+  
+  // Relacionamento para respostas (auto-relacionamento)
+  parent        RatingComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies       RatingComment[] @relation("CommentReplies")
 
   @@index([userId])
   @@index([storeRatingId])
   @@index([productRatingId])
+  @@index([parentId])
   @@map("rating_comments")
 }

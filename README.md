@@ -56,6 +56,14 @@ No macOS com Homebrew, o usuário do banco é o seu usuário do sistema, sem sen
    npx prisma migrate dev
    ```
 
+6. Insira as categorias oficiais no banco de desenvolvimento.
+
+   ```bash
+   npx prisma db seed
+   ```
+
+   O comando pode ser repetido: ele só cria o que falta. Veja [Categorias oficiais](#categorias-oficiais).
+
 Os arquivos `.env` e `.env.test` são locais. O `.gitignore` ignora qualquer arquivo `.env*`, exceto o modelo `.env.example`, que só tem valores de exemplo; nunca force a inclusão dos demais em um commit.
 
 ## Executar
@@ -99,6 +107,7 @@ Os testes e2e apagam dados. Por segurança, só rodam se `DATABASE_URL` (lida de
 prisma/
   schema.prisma        models do banco
   migrations/          histórico de migrações (versionado)
+  seed.ts              dados iniciais (npx prisma db seed)
 src/
   prisma/              PrismaService, disponível em todos os módulos
   password/            PasswordService: hash e verificação de senha
@@ -172,6 +181,21 @@ Base local: `http://localhost:3001`. Referência completa e testável em `/docs`
 | Criar categoria | `POST /categories` | Bearer | 201 |
 | Editar categoria | `PATCH /categories/:id` | Bearer | 200 |
 | Excluir categoria | `DELETE /categories/:id` | Bearer | 204 |
+| Listar produtos | `GET /products` | pública | 200 |
+| Ver produto | `GET /products/:id` | pública | 200 |
+| Criar produto | `POST /products` | Bearer (dono da loja) | 201 |
+| Editar produto | `PATCH /products/:id` | Bearer (dono da loja) | 200 |
+| Excluir produto | `DELETE /products/:id` | Bearer (dono da loja) | 204 |
+| Listar imagens do produto | `GET /products/:productId/images` | pública | 200 |
+| Ver imagem do produto | `GET /products/:productId/images/:imageId` | pública | 200 |
+| Adicionar imagem ao produto | `POST /products/:productId/images` | Bearer (dono da loja) | 201 |
+| Editar imagem do produto | `PATCH /products/:productId/images/:imageId` | Bearer (dono da loja) | 200 |
+| Remover imagem do produto | `DELETE /products/:productId/images/:imageId` | Bearer (dono da loja) | 204 |
+| Listar lojas | `GET /stores` | pública | 200 |
+| Ver loja | `GET /stores/:id` | pública | 200 |
+| Criar loja | `POST /stores` | Bearer | 201 |
+| Editar loja | `PATCH /stores/:id` | Bearer (dono da loja) | 200 |
+| Excluir loja | `DELETE /stores/:id` | Bearer (dono da loja) | 204 |
 
 Não existe listagem de usuários nem consulta por id.
 
@@ -193,6 +217,87 @@ curl -X POST http://localhost:3001/categories \
 ```
 
 As escritas exigem um token válido de conta existente. Isso é uma proteção temporária: o projeto ainda não tem papéis administrativos, então qualquer conta cadastrada pode criar, editar ou excluir categorias até essa decisão ser tomada.
+
+#### Categorias oficiais
+
+São as categorias exibidas na página inicial do frontend, criadas como raízes e sem subcategorias:
+
+| Nome | Slug |
+| --- | --- |
+| Mercado | `mercado` |
+| Farmácia | `farmacia` |
+| Beleza | `beleza` |
+| Moda | `moda` |
+| Eletrônicos | `eletronicos` |
+| Jogos | `jogos` |
+| Brinquedos | `brinquedos` |
+| Casa | `casa` |
+
+```bash
+npx prisma db seed
+```
+
+A lista fica em `src/categories/official-categories.ts`. A seed usa o banco de `DATABASE_URL` e insere apenas os slugs que ainda não existem, sem alterar nem apagar categorias já cadastradas. Em produção, rode depois de `npx prisma migrate deploy`, em um ambiente com as dependências de desenvolvimento instaladas (a seed é executada com `ts-node`). O frontend escolhe a imagem de cada categoria pelo slug.
+
+### Produtos
+
+Um produto pertence a uma loja e a uma categoria. As lojas são criadas e geridas pelas rotas de [Lojas](#lojas).
+
+- **Campos:** `storeId` e `categoryId` (ids existentes), `name` (até 255 caracteres, sem espaços nas pontas), `description` (opcional, até 5000 caracteres, aceita `null`), `price` e `stock`. A resposta traz também `id`, `createdAt` e `updatedAt`.
+- **Preço:** número JSON de `0` a `999999.99` com no máximo 2 casas decimais (coluna `DECIMAL(8,2)`). Texto como `"19.99"` é rejeitado e a resposta devolve número.
+- **Estoque:** inteiro de `0` a `2147483647`.
+- **Autorização:** leituras são públicas. Criar, editar e excluir exigem token válido e que a conta seja dona da loja do produto; caso contrário a API responde `403` (`STORE_NOT_OWNED` ao criar, `PRODUCT_NOT_OWNED` ao editar e excluir) e nada muda. Um produto inexistente responde `404` (`PRODUCT_NOT_FOUND`).
+- **Referências:** loja ou categoria inexistentes respondem `400` (`STORE_NOT_FOUND`, `CATEGORY_NOT_FOUND`).
+- **Edição:** envie só os campos a mudar. A loja não pode ser trocada (`storeId` responde `400`). `description: null` remove a descrição.
+- **Exclusão:** remove também as imagens e avaliações do produto (`ON DELETE CASCADE`). A loja e a categoria permanecem.
+- **Listagem:** `GET /products` ordena por nome e depois por id. Filtros: `storeId` e `categoryId` (categoria exata, sem subcategorias). Paginação: `limit` (padrão 50, máximo 100) e `offset`.
+- **Imagens:** `GET /products/:id` devolve `images` (ordenadas por `sortOrder` e depois `id`; lista vazia se não houver). Para gerenciá-las, veja [Imagens de produtos](#imagens-de-produtos). `images` no corpo de criação ou edição do produto responde `400`.
+
+```bash
+curl -X POST http://localhost:3001/products \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"storeId":1,"categoryId":1,"name":"Fone Bluetooth","price":199.9,"stock":25}'
+```
+
+### Imagens de produtos
+
+Um produto pode ter várias imagens, usadas no detalhe do produto (RF27). **O projeto não tem serviço de upload nem armazenamento de arquivos:** a API guarda apenas o **link** (`imageUrl`) de uma imagem já hospedada em outro lugar. Enviar o arquivo da imagem (multipart ou base64) fica fora desta etapa e exigiria uma decisão de infraestrutura.
+
+- **Campos:** `imageUrl` (obrigatório na criação) e `sortOrder` (opcional). A resposta traz também `id` e `productId`. O produto é o da rota e não pode ser trocado (`productId` no corpo responde `400`).
+- **Link:** URL absoluta `http` ou `https`, com host, até 255 caracteres e sem espaços ou caracteres de controle. `ftp:`, `javascript:`, `data:`, `file:`, caminhos relativos e links sem protocolo respondem `400`. A API não confere se o link abre nem se é uma imagem.
+- **Ordem:** `sortOrder` é inteiro de `0` a `2147483647`; `0` é a primeira imagem. Se for omitido na criação, a imagem vai depois da última (`0` quando o produto não tem imagens). Não há reordenação automática e pode haver lacunas, por exemplo depois de remover uma imagem.
+- **Ordem já usada:** criar ou editar com um `sortOrder` que outra imagem do mesmo produto já usa responde `409` (`IMAGE_ORDER_TAKEN`) e nada muda. Para trocar duas imagens de lugar, mova uma para uma ordem livre primeiro. Editar uma imagem com a ordem que ela já tem é aceito. A mesma ordem pode existir em produtos diferentes.
+- **Listagem:** sempre por `sortOrder` e depois `id`, sem paginação.
+- **Autorização:** leituras são públicas. Adicionar, editar e remover exigem token válido e que a conta seja dona da loja do produto; caso contrário `403` (`PRODUCT_NOT_OWNED`) e nada muda.
+- **Erros `404`:** `PRODUCT_NOT_FOUND` se o produto não existe e `PRODUCT_IMAGE_NOT_FOUND` se a imagem não existe **ou pertence a outro produto**. O produto é verificado antes da imagem. Ids da rota que não sejam inteiros positivos de 32 bits respondem `400`.
+- **Edição:** envie só o que mudar (`imageUrl` e/ou `sortOrder`); `null` responde `400`. Um corpo vazio devolve a imagem como está.
+- **Exclusão do produto:** remove também todas as suas imagens (`ON DELETE CASCADE`); as de outros produtos não mudam. Remover uma imagem não altera as demais.
+- **Concorrência:** duas escritas simultâneas na mesma ordem resultam em uma só gravada e a outra em `409`.
+- **Banco:** a tabela `product_images` já era suficiente; não houve mudança de schema nem migration.
+
+```bash
+curl -X POST http://localhost:3001/products/1/images \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"imageUrl":"https://cdn.exemplo.com/produtos/fone-frente.jpg","sortOrder":0}'
+### Lojas
+
+Cobre RF31 a RF35 (ver, cadastrar, excluir, editar e listar lojas; US23 a US26). A página visual da loja (RF30/US22) é do frontend: ela usa `GET /stores/:id` e `GET /products?storeId=<id>`.
+
+- **Campos:** `categoryId` (id existente) e `name` (até 255 caracteres, sem espaços nas pontas) são obrigatórios. `description` (até 5000 caracteres), `logoUrl`, `bannerUrl` e `stickerUrl` são opcionais e aceitam `null`. As três imagens são endereços `http`/`https` (até 255 caracteres, sem usuário e senha na URL); o envio de arquivos é outra tarefa. A resposta traz também `id`, `userId` (dono), `createdAt` e `updatedAt`; o detalhe traz ainda `category` (`id`, `name`, `slug`).
+- **Dono:** é sempre a conta do token. `userId` no corpo responde `400`, tanto ao criar quanto ao editar, então não dá para criar loja em nome de outra conta nem transferir uma loja. Uma conta pode ter várias lojas, e nomes repetidos são permitidos.
+- **Autorização:** leituras são públicas. Criar exige token válido; editar e excluir exigem também que a conta seja dona da loja, caso contrário `403` (`STORE_NOT_OWNED`) e nada muda. Loja inexistente responde `404` (`STORE_NOT_FOUND`); categoria inexistente responde `400` (`CATEGORY_NOT_FOUND`). Conflitos de concorrência respondem `409` (`REFERENCE_CHANGED` ou `WRITE_CONFLICT`).
+- **Edição:** envie só os campos a mudar. `description`, `logoUrl`, `bannerUrl` e `stickerUrl` com `null` removem o valor; `name` e `categoryId` não aceitam `null`. Corpo vazio devolve o estado atual.
+- **Exclusão:** é definitiva e remove, na mesma transação, os produtos da loja (com as imagens e avaliações deles), as avaliações da loja e os comentários dessas avaliações (`ON DELETE CASCADE`). A categoria e as contas permanecem. Depois disso, a categoria da loja pode ser excluída, pois deixa de estar em uso por ela.
+- **Listagem:** `GET /stores` ordena por nome e depois por id. Filtros: `categoryId` (categoria exata, sem subcategorias) e `userId` (lojas de um dono, útil para "minhas lojas"). Paginação: `limit` (padrão 50, máximo 100) e `offset`.
+
+```bash
+curl -X POST http://localhost:3001/stores \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"categoryId":1,"name":"Loja do João","description":"Eletrônicos"}'
+```
 
 ### Usuário
 

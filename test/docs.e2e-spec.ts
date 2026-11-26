@@ -50,6 +50,21 @@ describe('API documentation (e2e)', () => {
         'GET /categories/{id}',
         'PATCH /categories/{id}',
         'POST /categories',
+        'DELETE /products/{id}',
+        'DELETE /products/{productId}/images/{imageId}',
+        'GET /products',
+        'GET /products/{id}',
+        'GET /products/{productId}/images',
+        'GET /products/{productId}/images/{imageId}',
+        'DELETE /stores/{id}',
+        'GET /stores',
+        'GET /stores/{id}',
+        'PATCH /stores/{id}',
+        'POST /stores',
+        'PATCH /products/{id}',
+        'PATCH /products/{productId}/images/{imageId}',
+        'POST /products',
+        'POST /products/{productId}/images',
         'GET /users/me',
         'PATCH /users/me',
         'PATCH /users/me/password',
@@ -89,6 +104,62 @@ describe('API documentation (e2e)', () => {
     expect(
       document.paths['/categories/by-slug/{slug}'].get.security,
     ).toBeUndefined();
+  });
+
+  it('requires a bearer token and documents 403 only for product writes', () => {
+    expect(document.paths['/products'].post.security).toEqual([{ bearer: [] }]);
+    expect(document.paths['/products/{id}'].patch.security).toEqual([
+      { bearer: [] },
+    ]);
+    expect(document.paths['/products/{id}'].delete.security).toEqual([
+      { bearer: [] },
+    ]);
+    expect(document.paths['/products'].get.security).toBeUndefined();
+    expect(document.paths['/products/{id}'].get.security).toBeUndefined();
+
+    expect(document.paths['/products'].post.responses).toHaveProperty('403');
+    expect(document.paths['/products/{id}'].patch.responses).toHaveProperty(
+      '403',
+    );
+    expect(document.paths['/products/{id}'].delete.responses).toHaveProperty(
+      '403',
+    );
+  });
+
+  it('requires a bearer token for image writes only', () => {
+    const list = document.paths['/products/{productId}/images'];
+    const one = document.paths['/products/{productId}/images/{imageId}'];
+    expect(list.get.security).toBeUndefined();
+    expect(one.get.security).toBeUndefined();
+    expect(list.post.security).toEqual([{ bearer: [] }]);
+    expect(one.patch.security).toEqual([{ bearer: [] }]);
+    expect(one.delete.security).toEqual([{ bearer: [] }]);
+    for (const operation of [list.post, one.patch, one.delete]) {
+      expect(operation.responses).toHaveProperty('403');
+      expect(operation.responses).toHaveProperty('404');
+    }
+    expect(list.post.responses).toHaveProperty('409');
+    expect(one.patch.responses).toHaveProperty('409');
+  });
+
+  it('requires a bearer token for store writes and documents 403 on edit and delete', () => {
+    expect(document.paths['/stores'].post.security).toEqual([{ bearer: [] }]);
+    expect(document.paths['/stores/{id}'].patch.security).toEqual([
+      { bearer: [] },
+    ]);
+    expect(document.paths['/stores/{id}'].delete.security).toEqual([
+      { bearer: [] },
+    ]);
+    expect(document.paths['/stores'].get.security).toBeUndefined();
+    expect(document.paths['/stores/{id}'].get.security).toBeUndefined();
+
+    expect(document.paths['/stores/{id}'].patch.responses).toHaveProperty(
+      '403',
+    );
+    expect(document.paths['/stores/{id}'].delete.responses).toHaveProperty(
+      '403',
+    );
+    expect(document.paths['/stores'].post.responses).not.toHaveProperty('403');
   });
 
   it('never documents credentials in the user representation', () => {
