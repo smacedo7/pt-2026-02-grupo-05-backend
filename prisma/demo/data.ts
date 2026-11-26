@@ -14,12 +14,13 @@ export const DEMO_SUBCATEGORIES = [
   { name: 'Outros', slug: 'outros' },
 ] as const;
 
-// Names read from the logos on the product cards of the frame. "Rapiit" and
-// "Bersay" are provisional readings of stylized logos. The name identifies the
-// store on later runs, so fix it here before seeding a database.
+// Names read from the logos on the product cards of the frame. "Repiit" is in
+// the store list of the Figma file; "Bersay" is a provisional reading of a
+// stylized logo. The name identifies the store on later runs, so fix it here
+// before seeding a database.
 // "key" builds the owner account: demo.<key>@example.com.
 export const DEMO_STORES = [
-  { key: 'rapiit', name: 'Rapiit' },
+  { key: 'repiit', name: 'Repiit' },
   { key: 'bersay', name: 'Bersay' },
   { key: 'hobby', name: 'Hobby' },
 ] as const;
@@ -36,14 +37,14 @@ const UNAVAILABLE = 0;
 
 export const DEMO_PRODUCTS = [
   {
-    storeKey: 'rapiit',
+    storeKey: 'repiit',
     subcategorySlug: 'notebooks',
     name: 'Computador Lenovo',
     price: '3899.99',
     stock: AVAILABLE,
   },
   {
-    storeKey: 'rapiit',
+    storeKey: 'repiit',
     subcategorySlug: 'notebooks',
     name: 'Computador Samsung',
     price: '8549.99',
@@ -57,7 +58,7 @@ export const DEMO_PRODUCTS = [
     stock: AVAILABLE,
   },
   {
-    storeKey: 'rapiit',
+    storeKey: 'repiit',
     subcategorySlug: 'tvs',
     name: 'Smart TV Philips',
     price: '1229.00',

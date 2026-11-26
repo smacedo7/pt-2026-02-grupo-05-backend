@@ -114,7 +114,7 @@ describe('Demo seed (e2e)', () => {
         store.logoUrl,
       ]),
     ).toEqual([
-      ['Rapiit', 'demo.rapiit@example.com', 'eletronicos', null],
+      ['Repiit', 'demo.repiit@example.com', 'eletronicos', null],
       ['Bersay', 'demo.bersay@example.com', 'eletronicos', null],
       ['Hobby', 'demo.hobby@example.com', 'eletronicos', null],
     ]);
@@ -139,10 +139,10 @@ describe('Demo seed (e2e)', () => {
         product.category.slug,
       ]),
     ).toEqual([
-      ['Computador Lenovo', '3899.99', true, 'Rapiit', 'notebooks'],
-      ['Computador Samsung', '8549.99', false, 'Rapiit', 'notebooks'],
+      ['Computador Lenovo', '3899.99', true, 'Repiit', 'notebooks'],
+      ['Computador Samsung', '8549.99', false, 'Repiit', 'notebooks'],
       ['iPhone 15', '4769.10', true, 'Bersay', 'celulares'],
-      ['Smart TV Philips', '1229.00', true, 'Rapiit', 'tvs'],
+      ['Smart TV Philips', '1229.00', true, 'Repiit', 'tvs'],
       ['Xbox Series X', '3599.99', true, 'Hobby', 'outros'],
     ]);
 
@@ -268,13 +268,13 @@ describe('Demo seed (e2e)', () => {
       const { accessToken } = response.body as { accessToken: string };
       return { Authorization: `Bearer ${accessToken}` };
     };
-    const owner = await signIn('demo.rapiit@example.com');
+    const owner = await signIn('demo.repiit@example.com');
     const otherOwner = await signIn('demo.hobby@example.com');
     const category = await prisma.category.findUniqueOrThrow({
       where: { slug: 'eletronicos' },
     });
     const seededStore = await prisma.store.findFirstOrThrow({
-      where: { name: 'Rapiit' },
+      where: { name: 'Repiit' },
     });
     const seededProduct = await prisma.product.findFirstOrThrow({
       where: { name: 'Computador Lenovo' },
