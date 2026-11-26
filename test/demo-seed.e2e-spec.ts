@@ -402,10 +402,12 @@ describe('Demo seed (e2e)', () => {
       where: { name: 'Smart TV Philips' },
     });
     await http().delete(`/products/${television.id}`).set(owner).expect(204);
-    const electree = await prisma.store.findFirstOrThrow({
-      where: { name: 'Electree' },
+    // A store that sells nothing in the demo, so no product goes with it.
+    const empty = await prisma.store.findFirstOrThrow({
+      where: { name: 'Whiskers' },
     });
-    await http().delete(`/stores/${electree.id}`).set(otherOwner).expect(204);
+    const emptyOwner = await signIn('demo.whiskers@example.com');
+    await http().delete(`/stores/${empty.id}`).set(emptyOwner).expect(204);
 
     // A new run recreates what was deleted and keeps what was edited.
     await expect(run()).resolves.toMatchObject({
