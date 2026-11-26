@@ -40,6 +40,16 @@ const EXPECTED_PRODUCTS = [
   ['Batom', '179.00', true, 'Creamy Skincare', 'beleza'],
   ['Blush', '199.99', false, 'Roots', 'beleza'],
   ['Gel Perfumado', '179.99', true, 'Rare Beauty', 'beleza'],
+  ['Brownie Meio Amargo', '4.70', true, 'CJR', 'mercado'],
+  ['Brownie Tradicional', '3.80', false, 'Maumar', 'mercado'],
+  ['Nozes', '29.99', true, 'The Cro Brew', 'mercado'],
+  ['Banana', '3.99', true, 'd’carts & baskets', 'mercado'],
+  ['Limão Siciliano', '17.99', false, 'CJR', 'mercado'],
+  ['Leite', '4.99', true, 'Maumar', 'mercado'],
+  ['Manteiga', '23.99', true, 'The Cro Brew', 'mercado'],
+  ['Leite Condensado', '7.99', true, 'd’carts & baskets', 'mercado'],
+  ['Coca-Cola', '3.99', true, 'CJR', 'mercado'],
+  ['Farinha de Trigo', '6.99', true, 'Maumar', 'mercado'],
 ];
 
 describe('Demo seed options', () => {
@@ -202,6 +212,15 @@ describe('Demo seed (e2e)', () => {
     ).toEqual([
       ['Computador Lenovo', 10],
       ['Computador Samsung', 0],
+    ]);
+    expect(
+      products
+        .filter((product) => product.description !== null)
+        .map((product) => [product.name, product.description]),
+    ).toEqual([
+      ['Nozes', 'Preço por kg.'],
+      ['Banana', 'Preço por kg.'],
+      ['Limão Siciliano', 'Preço por kg.'],
     ]);
     await expectNoExtras();
   });
