@@ -27,6 +27,19 @@ const EXPECTED_PRODUCTS = [
   ['Nintendo Switch 2', '4799.99', false, 'Electree', 'eletronicos'],
   ['JBL', '1399.00', true, 'Electree', 'eletronicos'],
   ['Xbox Series S', '1499.99', true, 'Electree', 'eletronicos'],
+  ['Lápis Labial', '139.90', true, 'Rare Beauty', 'beleza'],
+  ['Contorno', '289.90', true, 'Creamy Skincare', 'beleza'],
+  ['Iluminador', '249.90', true, 'Roots', 'beleza'],
+  ['Primer', '139.00', true, 'Rare Beauty', 'beleza'],
+  ['Máscara de Cílios', '109.99', true, 'Creamy Skincare', 'beleza'],
+  ['Mini Blush', '99.99', false, 'Roots', 'beleza'],
+  ['Pó Compacto', '119.50', true, 'Creamy Skincare', 'beleza'],
+  ['Perfume Rare', '599.90', true, 'Rare Beauty', 'beleza'],
+  ['Bronzer', '254.99', true, 'Roots', 'beleza'],
+  ['Bruma Facial', '149.00', false, 'Rare Beauty', 'beleza'],
+  ['Batom', '179.00', true, 'Creamy Skincare', 'beleza'],
+  ['Blush', '199.99', false, 'Roots', 'beleza'],
+  ['Gel Perfumado', '179.99', true, 'Rare Beauty', 'beleza'],
 ];
 
 describe('Demo seed options', () => {
