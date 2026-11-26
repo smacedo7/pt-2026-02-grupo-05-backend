@@ -18,7 +18,7 @@ async function main(): Promise<void> {
     if (demo) {
       const summary = await seedDemo(prisma, demo);
       console.log(
-        `Demo: ${summary.subcategoriesCreated} subcategories and ${summary.usersCreated} accounts created.`,
+        `Demo: ${summary.subcategoriesCreated} subcategories, ${summary.usersCreated} accounts and ${summary.productsCreated} products created.`,
       );
       for (const { id, name, created: isNew } of summary.stores) {
         console.log(

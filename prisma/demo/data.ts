@@ -23,3 +23,47 @@ export const DEMO_STORES = [
   { key: 'bersay', name: 'Bersay' },
   { key: 'hobby', name: 'Hobby' },
 ] as const;
+
+// Only the products whose price, availability and store are visible in the frame.
+// The other names of the inventory are not seeded: the database requires a price,
+// a stock and a store, and none of them was confirmed.
+// The frame shows only "available" or "unavailable": 10 is an arbitrary quantity
+// for the first, 0 stands for the second. Names follow the checked inventory
+// (the frame abbreviates "Computador" as "Comp.").
+export const DEMO_PRODUCTS = [
+  {
+    storeKey: 'rapiit',
+    subcategorySlug: 'notebooks',
+    name: 'Computador Lenovo',
+    price: '3899.99',
+    stock: 10,
+  },
+  {
+    storeKey: 'rapiit',
+    subcategorySlug: 'notebooks',
+    name: 'Computador Samsung',
+    price: '8549.99',
+    stock: 0,
+  },
+  {
+    storeKey: 'bersay',
+    subcategorySlug: 'celulares',
+    name: 'iPhone 15',
+    price: '4769.10',
+    stock: 10,
+  },
+  {
+    storeKey: 'rapiit',
+    subcategorySlug: 'tvs',
+    name: 'Smart TV Philips',
+    price: '1229.00',
+    stock: 10,
+  },
+  {
+    storeKey: 'hobby',
+    subcategorySlug: 'outros',
+    name: 'Xbox Series X',
+    price: '3599.99',
+    stock: 10,
+  },
+] as const;

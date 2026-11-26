@@ -122,6 +122,48 @@ describe('Demo seed (e2e)', () => {
     await expectNoExtras();
   });
 
+  it('creates the products with the price and availability of the frame', async () => {
+    await expect(run()).resolves.toMatchObject({ productsCreated: 5 });
+
+    const products = await prisma.product.findMany({
+      include: { store: true, category: true },
+      orderBy: { id: 'asc' },
+    });
+    // Written out here, not imported, so a wrong value fails the test.
+    expect(
+      products.map((product) => [
+        product.name,
+        product.price.toFixed(2),
+        product.stock > 0,
+        product.store.name,
+        product.category.slug,
+      ]),
+    ).toEqual([
+      ['Computador Lenovo', '3899.99', true, 'Rapiit', 'notebooks'],
+      ['Computador Samsung', '8549.99', false, 'Rapiit', 'notebooks'],
+      ['iPhone 15', '4769.10', true, 'Bersay', 'celulares'],
+      ['Smart TV Philips', '1229.00', true, 'Rapiit', 'tvs'],
+      ['Xbox Series X', '3599.99', true, 'Hobby', 'outros'],
+    ]);
+
+    const notebooks = await prisma.category.findUniqueOrThrow({
+      where: { slug: 'notebooks' },
+    });
+    const listed = await http()
+      .get(`/products?categoryId=${notebooks.id}`)
+      .expect(200);
+    expect(
+      listed.body.map((item: { name: string; stock: number }) => [
+        item.name,
+        item.stock,
+      ]),
+    ).toEqual([
+      ['Computador Lenovo', 10],
+      ['Computador Samsung', 0],
+    ]);
+    await expectNoExtras();
+  });
+
   it('creates accounts that can sign in, without storing the password', async () => {
     await run();
 
@@ -140,11 +182,19 @@ describe('Demo seed (e2e)', () => {
       where: { name: 'Hobby' },
       data: { description: 'edited by hand' },
     });
+    await prisma.product.updateMany({
+      where: { name: 'iPhone 15' },
+      data: { price: '1.00', stock: 0 },
+    });
     const before = await snapshot();
 
     const second = await seedDemo(prisma, { password: 'outra-senha-local' });
 
-    expect(second).toMatchObject({ subcategoriesCreated: 0, usersCreated: 0 });
+    expect(second).toMatchObject({
+      subcategoriesCreated: 0,
+      usersCreated: 0,
+      productsCreated: 0,
+    });
     expect(second.stores.every((store) => !store.created)).toBe(true);
     expect(await snapshot()).toEqual(before);
   });
@@ -155,6 +205,7 @@ describe('Demo seed (e2e)', () => {
     expect(await prisma.category.count()).toBe(13);
     expect(await prisma.user.count()).toBe(3);
     expect(await prisma.store.count()).toBe(3);
+    expect(await prisma.product.count()).toBe(5);
   });
 
   it('keeps the data that already exists', async () => {
@@ -228,5 +279,9 @@ describe('Demo seed (e2e)', () => {
     const output = seed(demo);
     expect(output).not.toContain(PASSWORD);
     expect(await prisma.store.count()).toBe(3);
+    expect(await prisma.product.count()).toBe(5);
+
+    expect(seed(demo)).toContain('0 subcategories, 0 accounts and 0 products');
+    expect(await prisma.product.count()).toBe(5);
   }, 120000);
 });

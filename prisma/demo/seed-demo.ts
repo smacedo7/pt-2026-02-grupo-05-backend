@@ -5,6 +5,7 @@ import {
 } from '../../src/password/password.service';
 import {
   DEMO_PARENT_CATEGORY_SLUG,
+  DEMO_PRODUCTS,
   DEMO_STORES,
   DEMO_SUBCATEGORIES,
 } from './data';
@@ -19,6 +20,7 @@ export type DemoSummary = {
   subcategoriesCreated: number;
   usersCreated: number;
   stores: { id: number; name: string; created: boolean }[];
+  productsCreated: number;
 };
 
 type Tx = Prisma.TransactionClient;
@@ -81,7 +83,8 @@ export async function seedDemo(
 
   return prisma.$transaction(
     async (tx) => {
-      // One demo run at a time: stores have no unique key in the database.
+      // One demo run at a time: stores and products have no unique key in the
+      // database.
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('demo-seed'))`;
 
       const parent = await tx.category.findUnique({
@@ -98,6 +101,7 @@ export async function seedDemo(
 
       let usersCreated = 0;
       const stores: DemoSummary['stores'] = [];
+      const storeIds = new Map<string, number>();
       for (const { key, name } of DEMO_STORES) {
         const owner = await findOrCreateOwner(tx, key, name, passwordHash);
         if (owner.created) usersCreated += 1;
@@ -114,9 +118,12 @@ export async function seedDemo(
             select: { id: true },
           }));
         stores.push({ id: store.id, name, created: existing === null });
+        storeIds.set(key, store.id);
       }
 
-      return { subcategoriesCreated, usersCreated, stores };
+      const productsCreated = await seedProducts(tx, storeIds);
+
+      return { subcategoriesCreated, usersCreated, stores, productsCreated };
     },
     { maxWait: 30_000, timeout: 30_000 },
   );
@@ -139,6 +146,38 @@ async function seedSubcategories(tx: Tx, parentId: number): Promise<number> {
         `category "${slug}" already exists outside "${DEMO_PARENT_CATEGORY_SLUG}"; nothing of the demo was written`,
       );
     }
+  }
+  return created;
+}
+
+// A product is recognized by its store and name; an existing one is left as is.
+async function seedProducts(
+  tx: Tx,
+  storeIds: Map<string, number>,
+): Promise<number> {
+  let created = 0;
+  for (const product of DEMO_PRODUCTS) {
+    const storeId = storeIds.get(product.storeKey)!;
+    const existing = await tx.product.findFirst({
+      where: { storeId, name: product.name },
+      select: { id: true },
+    });
+    if (existing) continue;
+
+    const category = await tx.category.findUniqueOrThrow({
+      where: { slug: product.subcategorySlug },
+      select: { id: true },
+    });
+    await tx.product.create({
+      data: {
+        storeId,
+        categoryId: category.id,
+        name: product.name,
+        price: product.price,
+        stock: product.stock,
+      },
+    });
+    created += 1;
   }
   return created;
 }
