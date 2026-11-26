@@ -2,6 +2,7 @@ import { execSync } from 'node:child_process';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
+import { DEMO_PRODUCTS } from './../prisma/demo/data';
 import { readDemoOptions, seedDemo } from './../prisma/demo/seed-demo';
 import { seedOfficialCategories } from './../src/categories/official-categories';
 import { PrismaService } from './../src/prisma/prisma.service';
@@ -9,6 +10,14 @@ import { createTestApp, resetDatabase } from './create-test-app';
 
 const PASSWORD = 'senha-de-teste-local';
 const LOCAL_URL = 'postgresql://someone@localhost:5432/any_test';
+
+// Name, price, available, store and category. Written out here, not imported,
+// so a wrong value fails the test.
+const EXPECTED_PRODUCTS = [
+  ['Computador Lenovo', '3899.99', true, 'Repiit', 'notebooks'],
+  ['Computador Samsung', '8549.99', false, 'Repiit', 'notebooks'],
+  ['Smart TV Philips', '1229.00', true, 'Repiit', 'tvs'],
+];
 
 describe('Demo seed options', () => {
   const asked = {
@@ -135,13 +144,14 @@ describe('Demo seed (e2e)', () => {
   });
 
   it('creates the products with the price and availability of the frame', async () => {
-    await expect(run()).resolves.toMatchObject({ productsCreated: 3 });
+    await expect(run()).resolves.toMatchObject({
+      productsCreated: EXPECTED_PRODUCTS.length,
+    });
 
     const products = await prisma.product.findMany({
       include: { store: true, category: true },
       orderBy: { id: 'asc' },
     });
-    // Written out here, not imported, so a wrong value fails the test.
     expect(
       products.map((product) => [
         product.name,
@@ -150,11 +160,10 @@ describe('Demo seed (e2e)', () => {
         product.store.name,
         product.category.slug,
       ]),
-    ).toEqual([
-      ['Computador Lenovo', '3899.99', true, 'Repiit', 'notebooks'],
-      ['Computador Samsung', '8549.99', false, 'Repiit', 'notebooks'],
-      ['Smart TV Philips', '1229.00', true, 'Repiit', 'tvs'],
-    ]);
+    ).toEqual(EXPECTED_PRODUCTS);
+    expect(products.every((product) => [0, 10].includes(product.stock))).toBe(
+      true,
+    );
 
     const notebooks = await prisma.category.findUniqueOrThrow({
       where: { slug: 'notebooks' },
@@ -172,6 +181,34 @@ describe('Demo seed (e2e)', () => {
       ['Computador Samsung', 0],
     ]);
     await expectNoExtras();
+  });
+
+  it('links each product to a store of the same root category', async () => {
+    await run();
+
+    const products = await prisma.product.findMany({
+      include: {
+        store: { include: { category: true } },
+        category: { include: { parentCategory: true } },
+      },
+    });
+    for (const product of products) {
+      const root = product.category.parentCategory ?? product.category;
+      expect([product.name, product.store.category.slug]).toEqual([
+        product.name,
+        root.slug,
+      ]);
+    }
+    // Only these store links were read in Figma; any other is a demo choice.
+    expect(
+      DEMO_PRODUCTS.filter((product) => product.storeLink === 'figma').map(
+        (product) => [product.name, product.storeKey],
+      ),
+    ).toEqual([
+      ['Computador Lenovo', 'repiit'],
+      ['Computador Samsung', 'repiit'],
+      ['Smart TV Philips', 'repiit'],
+    ]);
   });
 
   it('creates accounts that can sign in, without storing the password', async () => {
@@ -215,7 +252,7 @@ describe('Demo seed (e2e)', () => {
     expect(await prisma.category.count()).toBe(13);
     expect(await prisma.user.count()).toBe(15);
     expect(await prisma.store.count()).toBe(15);
-    expect(await prisma.product.count()).toBe(3);
+    expect(await prisma.product.count()).toBe(EXPECTED_PRODUCTS.length);
   });
 
   it('keeps the data that already exists', async () => {
@@ -376,7 +413,7 @@ describe('Demo seed (e2e)', () => {
       productsCreated: 1,
     });
     expect(await prisma.store.count()).toBe(15);
-    expect(await prisma.product.count()).toBe(3);
+    expect(await prisma.product.count()).toBe(EXPECTED_PRODUCTS.length);
     await expect(
       prisma.store.findUniqueOrThrow({ where: { id: seededStore.id } }),
     ).resolves.toMatchObject({ description: 'Editada pela API' });
@@ -407,9 +444,9 @@ describe('Demo seed (e2e)', () => {
     const output = seed(demo);
     expect(output).not.toContain(PASSWORD);
     expect(await prisma.store.count()).toBe(15);
-    expect(await prisma.product.count()).toBe(3);
+    expect(await prisma.product.count()).toBe(EXPECTED_PRODUCTS.length);
 
     expect(seed(demo)).toContain('0 subcategories, 0 accounts and 0 products');
-    expect(await prisma.product.count()).toBe(3);
+    expect(await prisma.product.count()).toBe(EXPECTED_PRODUCTS.length);
   }, 120000);
 });

@@ -170,7 +170,7 @@ async function seedProducts(
     if (existing) continue;
 
     const category = await tx.category.findUniqueOrThrow({
-      where: { slug: product.subcategorySlug },
+      where: { slug: product.categorySlug },
       select: { id: true },
     });
     await tx.product.create({
@@ -178,6 +178,7 @@ async function seedProducts(
         storeId,
         categoryId: category.id,
         name: product.name,
+        description: product.description ?? null,
         price: product.price,
         stock: product.stock,
       },

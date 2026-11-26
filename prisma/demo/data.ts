@@ -1,6 +1,6 @@
 // Demonstration data only; none of it is a product requirement.
-// Source: the "Categoria Específica" frames of the team's Figma file, plus the
-// inventory checked by hand in the same file.
+// Source: the team's Figma file ("Categoria Específica" frames, store list and
+// product cards). Each block below says what was read there and what was chosen.
 
 // The Figma frame is titled "tecnologia"; the official root for it is this one.
 export const DEMO_PARENT_CATEGORY_SLUG = 'eletronicos';
@@ -35,36 +35,56 @@ export const DEMO_STORES = [
   { key: 'whiskers', name: 'Whiskers', categorySlug: 'moda' },
 ] as const;
 
-// Only the products whose price, availability and store are visible in the frame.
-// The other names of the inventory are not seeded: the database requires a price,
-// a stock and a store, and none of them was confirmed.
-// Names follow the checked inventory (the frame abbreviates "Computador" as
-// "Comp.").
+// Names, prices and availability come from the legible product list taken from
+// Figma. A product is only seeded when it has a price and availability there.
+//
+// "storeLink" says where the link between product and store comes from:
+// - "figma": the store logo was read on the product card in Figma.
+// - "associacao-de-demonstracao" (associação de demonstração): no store could be
+//   identified, so a listed store of the same category was chosen for the demo.
+//   It is NOT information confirmed by Figma.
+//
+// The subcategories of the Repiit products are inferred from the kind of product.
+// The others stay directly in the root category: none was identified for them.
+//
 // Stock rule of the demonstration: the frame shows only "available" or
 // "unavailable", not quantities.
 const AVAILABLE = 10;
 const UNAVAILABLE = 0;
 
-export const DEMO_PRODUCTS = [
+type DemoProduct = {
+  storeKey: (typeof DEMO_STORES)[number]['key'];
+  storeLink: 'figma' | 'associacao-de-demonstracao';
+  categorySlug: string;
+  name: string;
+  price: string;
+  stock: number;
+  description?: string;
+};
+
+export const DEMO_PRODUCTS: readonly DemoProduct[] = [
   {
     storeKey: 'repiit',
-    subcategorySlug: 'notebooks',
+    storeLink: 'figma',
+    categorySlug: 'notebooks',
     name: 'Computador Lenovo',
     price: '3899.99',
     stock: AVAILABLE,
   },
   {
     storeKey: 'repiit',
-    subcategorySlug: 'notebooks',
+    storeLink: 'figma',
+    categorySlug: 'notebooks',
     name: 'Computador Samsung',
     price: '8549.99',
     stock: UNAVAILABLE,
   },
   {
     storeKey: 'repiit',
-    subcategorySlug: 'tvs',
+    storeLink: 'figma',
+    categorySlug: 'tvs',
     name: 'Smart TV Philips',
     price: '1229.00',
     stock: AVAILABLE,
   },
-] as const;
+];
