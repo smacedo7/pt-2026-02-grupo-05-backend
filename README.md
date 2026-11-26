@@ -239,6 +239,40 @@ npx prisma db seed
 
 A lista fica em `src/categories/official-categories.ts`. A seed usa o banco de `DATABASE_URL` e insere apenas os slugs que ainda não existem, sem alterar nem apagar categorias já cadastradas. Em produção, rode depois de `npx prisma migrate deploy`, em um ambiente com as dependências de desenvolvimento instaladas (a seed é executada com `ts-node`). O frontend escolhe a imagem de cada categoria pelo slug.
 
+#### Dados de demonstração (opcionais)
+
+Além das categorias oficiais, a seed pode criar um pequeno conjunto de demonstração, tirado dos frames "Categoria Específica" do Figma. Não é um requisito do produto. No `.env` local:
+
+```bash
+SEED_DEMO="true"
+SEED_DEMO_PASSWORD="<senha local com 8 caracteres ou mais>"
+```
+
+Depois rode `npx prisma db seed`. A saída informa o id de cada loja (a página fica em `/lojas/<id>` no frontend).
+
+| O que cria | Conteúdo |
+| --- | --- |
+| Subcategorias de Eletrônicos | `celulares`, `notebooks`, `tvs`, `acessorios` (sem produtos), `outros` |
+| Contas | `demo.rapiit`, `demo.bersay` e `demo.hobby`, com e-mail `@example.com` |
+| Lojas | Rapiit, Bersay e Hobby, uma por conta, sem logo |
+
+| Produto | Preço | Estoque | Loja | Subcategoria |
+| --- | --- | --- | --- | --- |
+| Computador Lenovo | 3899,99 | 10 | Rapiit | `notebooks` |
+| Computador Samsung | 8549,99 | 0 | Rapiit | `notebooks` |
+| iPhone 15 | 4769,10 | 10 | Bersay | `celulares` |
+| Smart TV Philips | 1229,00 | 10 | Rapiit | `tvs` |
+| Xbox Series X | 3599,99 | 10 | Hobby | `outros` |
+
+Proteções e comportamento:
+
+- Sem `SEED_DEMO="true"` (exatamente esse valor), a seed cria apenas as categorias oficiais.
+- É recusada, sem gravar nada, com `NODE_ENV="production"`, com banco fora de `localhost` ou sem senha válida. A checagem de host não detecta um túnel que exponha um servidor remoto em `localhost`.
+- Pode ser repetida: só cria o que falta e não altera nem apaga registros. Lojas são reconhecidas por conta e nome, e produtos por loja e nome; renomear um deles faz a próxima execução criar outro. Trocar a senha na variável não muda contas já criadas.
+- Se uma conta existente usar só o e-mail ou só o nome de usuário de demonstração, ou se um dos slugs já existir fora de Eletrônicos, nada de demonstração é gravado (as categorias oficiais permanecem).
+
+Limitações: "Rapiit" e "Bersay" são leitura provisória dos logos. O estoque 10 é arbitrário (o Figma só mostra disponível ou indisponível). Não há imagens, logos, avaliações nem comentários. Os demais produtos do Figma ficam de fora enquanto preço, disponibilidade e loja não forem confirmados.
+
 ### Produtos
 
 Um produto pertence a uma loja e a uma categoria. As lojas são criadas e geridas pelas rotas de [Lojas](#lojas).
