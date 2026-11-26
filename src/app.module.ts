@@ -9,6 +9,7 @@ import { ProductsModule } from './products/products.module';
 import { StoreRatingsModule } from './store-ratings/store-ratings.module';
 import { StoresModule } from './stores/stores.module';
 import { UsersModule } from './users/users.module';
+import { CommentsModule } from './comment/comments.module'; 
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { UsersModule } from './users/users.module';
     ProductImagesModule,
     StoresModule,
     StoreRatingsModule,
+    CommentsModule,
   ],
   providers: [
     {
