@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsInt, IsOptional, Max, Min } from 'class-validator';
 import { Transform } from 'class-transformer';
+import { INT32_MAX } from '../../common/pipes/entity-id.pipe';
 
 export const DEFAULT_LIMIT = 50;
 export const MAX_LIMIT = 100;
@@ -30,11 +31,13 @@ export class ListRatingsQueryDto {
     required: false,
     example: 0,
     minimum: 0,
+    maximum: INT32_MAX,
     description: 'Ratings to skip. Default 0.',
   })
   @IsOptional()
   @Transform(toNumberIfDigits)
   @IsInt()
   @Min(0)
+  @Max(INT32_MAX)
   offset?: number;
 }

@@ -64,15 +64,6 @@ export class RatingsService {
         });
       }
 
-      // One rating per user and product (unique in the schema).
-      const existing = await tx.productRating.findUnique({
-        where: { userId_productId: { userId, productId: dto.productId } },
-        select: { id: true },
-      });
-      if (existing) {
-        throw ratingAlreadyExists();
-      }
-
       const created = await tx.productRating.create({
         data: {
           userId,
@@ -125,7 +116,7 @@ export class RatingsService {
     dto: UpdateRatingDto,
   ): Promise<RatingResponseDto> {
     return this.write(userId, async (tx) => {
-      await this.assertOwnsRating(tx, userId, id);
+      const current = await this.getOwnedRating(tx, userId, id);
 
       const data: Prisma.ProductRatingUncheckedUpdateInput = {};
       if (dto.rating !== undefined) data.rating = dto.rating;
@@ -133,12 +124,7 @@ export class RatingsService {
 
       // Nothing to change: answer with the current state, as products do.
       if (Object.keys(data).length === 0) {
-        return toResponse(
-          await tx.productRating.findUniqueOrThrow({
-            where: { id },
-            select: RATING_SELECT,
-          }),
-        );
+        return toResponse(current);
       }
 
       const updated = await tx.productRating.update({
@@ -153,7 +139,7 @@ export class RatingsService {
   // The comments under the rating go with it (ON DELETE CASCADE).
   async remove(userId: number, id: number): Promise<void> {
     await this.write(userId, async (tx) => {
-      await this.assertOwnsRating(tx, userId, id);
+      await this.getOwnedRating(tx, userId, id);
       await tx.productRating.delete({ where: { id } });
     });
   }
@@ -192,15 +178,19 @@ export class RatingsService {
     }
   }
 
-  private async assertOwnsRating(tx: Tx, userId: number, id: number) {
+  private async getOwnedRating(
+    tx: Tx,
+    userId: number,
+    id: number,
+  ): Promise<RatingRow> {
     const rating = await tx.productRating.findUnique({
       where: { id },
-      select: { userId: true },
+      select: RATING_SELECT,
     });
     if (!rating) {
       throw ratingNotFound();
     }
-    if (rating.userId !== userId) {
+    if (rating.user.id !== userId) {
       throw new ForbiddenException({
         statusCode: 403,
         error: 'Forbidden',
@@ -208,6 +198,7 @@ export class RatingsService {
         message: 'only the author can edit or delete this rating',
       });
     }
+    return rating;
   }
 }
 

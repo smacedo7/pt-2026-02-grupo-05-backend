@@ -67,7 +67,6 @@ describe('RatingsService', () => {
   describe('create', () => {
     it('creates a rating and answers with the author', async () => {
       db.product.findUnique.mockResolvedValue({ id: 2 });
-      db.productRating.findUnique.mockResolvedValue(null);
       db.productRating.create.mockResolvedValue(row());
 
       const result = await service.create(7, {
@@ -95,7 +94,6 @@ describe('RatingsService', () => {
 
     it('stores null when the comment is not sent', async () => {
       db.product.findUnique.mockResolvedValue({ id: 2 });
-      db.productRating.findUnique.mockResolvedValue(null);
       db.productRating.create.mockResolvedValue(row({ comment: null }));
 
       await service.create(7, { productId: 2, rating: 4 });
@@ -119,30 +117,18 @@ describe('RatingsService', () => {
       expect(codeOf(error)).toBe('PRODUCT_NOT_FOUND');
     });
 
-    it('answers 409 RATING_ALREADY_EXISTS when the user already rated', async () => {
+    it('translates a unique constraint violation into 409 RATING_ALREADY_EXISTS', async () => {
       db.product.findUnique.mockResolvedValue({ id: 2 });
-      db.productRating.findUnique.mockResolvedValue({ id: 1 });
+      db.productRating.create.mockRejectedValue(prismaError('P2002'));
       const error = await service
         .create(7, { productId: 2, rating: 5 })
         .catch((e: unknown) => e);
       expect(error).toBeInstanceOf(ConflictException);
       expect(codeOf(error)).toBe('RATING_ALREADY_EXISTS');
-      expect(db.productRating.create).not.toHaveBeenCalled();
-    });
-
-    it('translates a unique race into 409 RATING_ALREADY_EXISTS', async () => {
-      db.product.findUnique.mockResolvedValue({ id: 2 });
-      db.productRating.findUnique.mockResolvedValue(null);
-      db.productRating.create.mockRejectedValue(prismaError('P2002'));
-      const error = await service
-        .create(7, { productId: 2, rating: 5 })
-        .catch((e: unknown) => e);
-      expect(codeOf(error)).toBe('RATING_ALREADY_EXISTS');
     });
 
     it('translates a foreign key race into 409 REFERENCE_CHANGED', async () => {
       db.product.findUnique.mockResolvedValue({ id: 2 });
-      db.productRating.findUnique.mockResolvedValue(null);
       db.productRating.create.mockRejectedValue(prismaError('P2003'));
       const error = await service
         .create(7, { productId: 2, rating: 5 })
@@ -153,7 +139,6 @@ describe('RatingsService', () => {
 
     it('rethrows unexpected errors untouched', async () => {
       db.product.findUnique.mockResolvedValue({ id: 2 });
-      db.productRating.findUnique.mockResolvedValue(null);
       const boom = new Error('boom');
       db.productRating.create.mockRejectedValue(boom);
       await expect(
@@ -235,7 +220,7 @@ describe('RatingsService', () => {
 
   describe('update', () => {
     it('allows the author to update only the fields sent', async () => {
-      db.productRating.findUnique.mockResolvedValue({ userId: 7 });
+      db.productRating.findUnique.mockResolvedValue(row());
       db.productRating.update.mockResolvedValue(row({ rating: 3 }));
 
       const result = await service.update(7, 1, { rating: 3 });
@@ -247,7 +232,7 @@ describe('RatingsService', () => {
     });
 
     it('removes the text when comment is null', async () => {
-      db.productRating.findUnique.mockResolvedValue({ userId: 7 });
+      db.productRating.findUnique.mockResolvedValue(row());
       db.productRating.update.mockResolvedValue(row({ comment: null }));
 
       await service.update(7, 1, { comment: null });
@@ -257,15 +242,18 @@ describe('RatingsService', () => {
       });
     });
 
-    it('answers with the current state when nothing is sent', async () => {
-      db.productRating.findUnique.mockResolvedValue({ userId: 7 });
-      db.productRating.findUniqueOrThrow.mockResolvedValue(row());
-      await service.update(7, 1, {});
+    it('answers with the current state when nothing is sent without extra queries', async () => {
+      db.productRating.findUnique.mockResolvedValue(row());
+      const result = await service.update(7, 1, {});
+      expect(result.rating).toBe(5);
       expect(db.productRating.update).not.toHaveBeenCalled();
+      expect(db.productRating.findUniqueOrThrow).not.toHaveBeenCalled();
     });
 
     it('answers 403 RATING_NOT_OWNED for another user', async () => {
-      db.productRating.findUnique.mockResolvedValue({ userId: 99 });
+      db.productRating.findUnique.mockResolvedValue(
+        row({ user: { id: 99, name: 'Other' } }),
+      );
       const error = await service
         .update(7, 1, { rating: 1 })
         .catch((e: unknown) => e);
@@ -280,7 +268,7 @@ describe('RatingsService', () => {
         NotFoundException,
       );
 
-      db.productRating.findUnique.mockResolvedValue({ userId: 7 });
+      db.productRating.findUnique.mockResolvedValue(row());
       db.productRating.update.mockRejectedValue(prismaError('P2025'));
       await expect(service.update(7, 1, { rating: 1 })).rejects.toBeInstanceOf(
         NotFoundException,
@@ -288,7 +276,7 @@ describe('RatingsService', () => {
     });
 
     it('translates a serialization failure into 409 WRITE_CONFLICT', async () => {
-      db.productRating.findUnique.mockResolvedValue({ userId: 7 });
+      db.productRating.findUnique.mockResolvedValue(row());
       db.productRating.update.mockRejectedValue(prismaError('P2034'));
       const error = await service
         .update(7, 1, { rating: 1 })
@@ -299,13 +287,15 @@ describe('RatingsService', () => {
 
   describe('remove', () => {
     it('allows the author to delete', async () => {
-      db.productRating.findUnique.mockResolvedValue({ userId: 7 });
+      db.productRating.findUnique.mockResolvedValue(row());
       await service.remove(7, 1);
       expect(db.productRating.delete).toHaveBeenCalledWith({ where: { id: 1 } });
     });
 
     it("does not delete another account's rating", async () => {
-      db.productRating.findUnique.mockResolvedValue({ userId: 99 });
+      db.productRating.findUnique.mockResolvedValue(
+        row({ user: { id: 99, name: 'Other' } }),
+      );
       await expect(service.remove(7, 1)).rejects.toBeInstanceOf(
         ForbiddenException,
       );

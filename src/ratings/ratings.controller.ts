@@ -6,7 +6,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -29,6 +28,7 @@ import {
 import { UnauthorizedResponse, ValidationErrorResponse } from '../api-errors';
 import { CurrentUserId } from '../auth/current-user-id.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { EntityIdPipe } from '../common/pipes/entity-id.pipe';
 import { CreateRatingDto } from './dto/create-rating.dto';
 import { ListRatingsQueryDto } from './dto/list-ratings.query.dto';
 import {
@@ -147,7 +147,7 @@ export class RatingsController {
   @ApiBadRequestResponse(ValidationErrorResponse)
   @ApiNotFoundResponse(PRODUCT_NOT_FOUND)
   findAllByProduct(
-    @Param('productId', ParseIntPipe) productId: number,
+    @Param('productId', EntityIdPipe) productId: number,
     @Query() query: ListRatingsQueryDto,
   ): Promise<RatingResponseDto[]> {
     return this.ratings.findAllByProduct(productId, query);
@@ -164,7 +164,7 @@ export class RatingsController {
   @ApiBadRequestResponse(ValidationErrorResponse)
   @ApiNotFoundResponse(PRODUCT_NOT_FOUND)
   getSummary(
-    @Param('productId', ParseIntPipe) productId: number,
+    @Param('productId', EntityIdPipe) productId: number,
   ): Promise<RatingSummaryResponseDto> {
     return this.ratings.getSummary(productId);
   }
@@ -186,7 +186,7 @@ export class RatingsController {
   @ApiConflictResponse(WRITE_CONFLICT)
   update(
     @CurrentUserId() userId: number,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', EntityIdPipe) id: number,
     @Body() dto: UpdateRatingDto,
   ): Promise<RatingResponseDto> {
     return this.ratings.update(userId, id, dto);
@@ -210,7 +210,7 @@ export class RatingsController {
   @ApiConflictResponse(WRITE_CONFLICT)
   async remove(
     @CurrentUserId() userId: number,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', EntityIdPipe) id: number,
   ): Promise<void> {
     await this.ratings.remove(userId, id);
   }

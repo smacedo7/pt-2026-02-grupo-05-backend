@@ -63,7 +63,9 @@ describe('CreateRatingDto', () => {
     ['blank comment', { comment: '   ' }, 'comment'],
     ['comment over 2000 characters', { comment: 'a'.repeat(2001) }, 'comment'],
     ['comment with control character', { comment: 'a\u0000b' }, 'comment'],
+    ['comment with DEL control character', { comment: 'a\u007fb' }, 'comment'],
     ['productId zero', { productId: 0 }, 'productId'],
+    ['productId above 32-bit int', { productId: 2147483648 }, 'productId'],
     ['productId as text', { productId: 'abc' }, 'productId'],
   ])('rejects %s', async (_label, patch, field) => {
     const messages = await messagesFor(CreateRatingDto, {
@@ -137,6 +139,7 @@ describe('ListRatingsQueryDto', () => {
     [{ limit: '0' }, 'limit'],
     [{ limit: '101' }, 'limit'],
     [{ offset: '-1' }, 'offset'],
+    [{ offset: '2147483648' }, 'offset'],
   ])('rejects %j', async (query, field) => {
     const messages = await messagesFor(ListRatingsQueryDto, query, 'query');
     expect(messages.some((message) => message.startsWith(field))).toBe(true);

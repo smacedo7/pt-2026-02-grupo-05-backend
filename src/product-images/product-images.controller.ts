@@ -30,7 +30,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateProductImageDto } from './dto/create-product-image.dto';
 import { ProductImageResponseDto } from './dto/product-image-response.dto';
 import { UpdateProductImageDto } from './dto/update-product-image.dto';
-import { EntityIdPipe } from './entity-id.pipe';
+import { EntityIdPipe } from '../common/pipes/entity-id.pipe';
 import { ProductImagesService } from './product-images.service';
 
 const NOT_FOUND = {
