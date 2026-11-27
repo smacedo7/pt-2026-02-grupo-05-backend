@@ -239,6 +239,130 @@ npx prisma db seed
 
 A lista fica em `src/categories/official-categories.ts`. A seed usa o banco de `DATABASE_URL` e insere apenas os slugs que ainda não existem, sem alterar nem apagar categorias já cadastradas. Em produção, rode depois de `npx prisma migrate deploy`, em um ambiente com as dependências de desenvolvimento instaladas (a seed é executada com `ts-node`). O frontend escolhe a imagem de cada categoria pelo slug.
 
+#### Dados de demonstração (opcionais)
+
+Além das categorias oficiais, a seed pode criar um conjunto de demonstração para a apresentação, montado a partir do Figma do time. Não é um requisito do produto, e **nem tudo nele é informação do Figma**: veja a coluna "Vínculo com a loja" e as limitações abaixo.
+
+No `.env` local:
+
+```bash
+SEED_DEMO="true"
+SEED_DEMO_PASSWORD="<senha local com 8 caracteres ou mais>"
+```
+
+Depois aplique as migrações pendentes e rode a seed:
+
+```bash
+npx prisma migrate deploy
+npx prisma db seed
+```
+
+A saída informa o id de cada loja (a página fica em `/lojas/<id>` no frontend). Para entrar com uma conta de demonstração, use o e-mail dela e a senha definida em `SEED_DEMO_PASSWORD`.
+
+Em um banco vazio, a execução resulta em 13 categorias (as 8 oficiais e 5 subcategorias de Eletrônicos: `celulares`, `notebooks`, `tvs`, `acessorios` e `outros`), 15 contas, 15 lojas e 36 produtos. Não cria imagens, logos, avaliações nem comentários.
+
+**Regra de estoque da demonstração:** o Figma mostra apenas "disponível" ou "indisponível". Produto disponível recebe estoque **10**; indisponível recebe **0**.
+
+##### Lojas
+
+Nomes e categorias seguem a lista de lojas do Figma. As contas são fictícias e existem apenas para serem donas das lojas.
+
+| Loja | Categoria | Conta proprietária | Produtos |
+| --- | --- | --- | --- |
+| CJR | Mercado | `demo.cjr@example.com` | 3 |
+| Maumar | Mercado | `demo.maumar@example.com` | 3 |
+| Mini Reno | Casa | `demo.mini-reno@example.com` | 0 |
+| Rare Beauty | Beleza | `demo.rare-beauty@example.com` | 5 |
+| The Cro Brew | Mercado | `demo.the-cro-brew@example.com` | 2 |
+| Amoca | Moda | `demo.amoca@example.com` | 0 |
+| Creamy Skincare | Beleza | `demo.creamy-skincare@example.com` | 4 |
+| SneakerStore | Moda | `demo.sneakerstore@example.com` | 0 |
+| d’carts & baskets | Mercado | `demo.dcarts-baskets@example.com` | 2 |
+| Repiit | Eletrônicos | `demo.repiit@example.com` | 3 |
+| Fluffy House | Casa | `demo.fluffy-house@example.com` | 0 |
+| Melina Couture | Moda | `demo.melina-couture@example.com` | 0 |
+| Electree | Eletrônicos | `demo.electree@example.com` | 10 |
+| Roots | Beleza | `demo.roots@example.com` | 4 |
+| Whiskers | Moda | `demo.whiskers@example.com` | 0 |
+
+##### Produtos
+
+Nomes, preços e disponibilidade vêm da lista de produtos legíveis do Figma. Em 33 dos 36 produtos a loja não foi identificada: o vínculo é uma **associação de demonstração** com uma loja da mesma categoria, **não uma informação confirmada pelo Figma**.
+
+| Produto | Preço (R$) | Estoque | Categoria | Loja | Vínculo com a loja |
+| --- | --- | --- | --- | --- | --- |
+| Computador Lenovo | 3899,99 | 10 | Eletrônicos > Notebooks | Repiit | Logo no card do Figma |
+| Computador Samsung | 8549,99 | 0 | Eletrônicos > Notebooks | Repiit | Logo no card do Figma |
+| Smart TV Philips | 1229,00 | 10 | Eletrônicos > TVs | Repiit | Logo no card do Figma |
+| iPhone 15 | 4769,10 | 10 | Eletrônicos | Electree | Associação de demonstração |
+| Xbox Series X | 3599,99 | 10 | Eletrônicos | Electree | Associação de demonstração |
+| Macbook Air | 15899,99 | 10 | Eletrônicos | Electree | Associação de demonstração |
+| iPhone 16 | 4598,99 | 0 | Eletrônicos | Electree | Associação de demonstração |
+| S25 Ultra | 5769,10 | 10 | Eletrônicos | Electree | Associação de demonstração |
+| iPad | 7859,00 | 10 | Eletrônicos | Electree | Associação de demonstração |
+| Headset Gamer | 899,99 | 0 | Eletrônicos | Electree | Associação de demonstração |
+| Nintendo Switch 2 | 4799,99 | 0 | Eletrônicos | Electree | Associação de demonstração |
+| JBL | 1399,00 | 10 | Eletrônicos | Electree | Associação de demonstração |
+| Xbox Series S | 1499,99 | 10 | Eletrônicos | Electree | Associação de demonstração |
+| Lápis Labial | 139,90 | 10 | Beleza | Rare Beauty | Associação de demonstração |
+| Contorno | 289,90 | 10 | Beleza | Creamy Skincare | Associação de demonstração |
+| Iluminador | 249,90 | 10 | Beleza | Roots | Associação de demonstração |
+| Primer | 139,00 | 10 | Beleza | Rare Beauty | Associação de demonstração |
+| Máscara de Cílios | 109,99 | 10 | Beleza | Creamy Skincare | Associação de demonstração |
+| Mini Blush | 99,99 | 0 | Beleza | Roots | Associação de demonstração |
+| Pó Compacto | 119,50 | 10 | Beleza | Creamy Skincare | Associação de demonstração |
+| Perfume Rare | 599,90 | 10 | Beleza | Rare Beauty | Associação de demonstração |
+| Bronzer | 254,99 | 10 | Beleza | Roots | Associação de demonstração |
+| Bruma Facial | 149,00 | 0 | Beleza | Rare Beauty | Associação de demonstração |
+| Batom | 179,00 | 10 | Beleza | Creamy Skincare | Associação de demonstração |
+| Blush | 199,99 | 0 | Beleza | Roots | Associação de demonstração |
+| Gel Perfumado | 179,99 | 10 | Beleza | Rare Beauty | Associação de demonstração |
+| Brownie Meio Amargo | 4,70 | 10 | Mercado | CJR | Associação de demonstração |
+| Brownie Tradicional | 3,80 | 0 | Mercado | Maumar | Associação de demonstração |
+| Nozes (preço por kg) | 29,99 | 10 | Mercado | The Cro Brew | Associação de demonstração |
+| Banana (preço por kg) | 3,99 | 10 | Mercado | d’carts & baskets | Associação de demonstração |
+| Limão Siciliano (preço por kg) | 17,99 | 0 | Mercado | CJR | Associação de demonstração |
+| Leite | 4,99 | 10 | Mercado | Maumar | Associação de demonstração |
+| Manteiga | 23,99 | 10 | Mercado | The Cro Brew | Associação de demonstração |
+| Leite Condensado | 7,99 | 10 | Mercado | d’carts & baskets | Associação de demonstração |
+| Coca-Cola | 3,99 | 10 | Mercado | CJR | Associação de demonstração |
+| Farinha de Trigo | 6,99 | 10 | Mercado | Maumar | Associação de demonstração |
+
+##### Proteções e comportamento
+
+- Sem `SEED_DEMO="true"` (exatamente esse valor), a seed cria apenas as categorias oficiais.
+- É recusada, sem gravar nada, com `NODE_ENV="production"`, com banco fora de `localhost` ou sem senha válida. A checagem de host não detecta um túnel que exponha um servidor remoto em `localhost`.
+- Pode ser repetida: só cria o que falta e não altera nem apaga registros. Lojas são reconhecidas por conta e nome, e produtos por loja e nome; renomear um deles, ou mudar sua loja na lista, faz a próxima execução criar outro. Trocar a senha na variável não muda contas já criadas.
+- Lojas e produtos semeados são registros comuns: a conta proprietária os edita e exclui pela API. Uma nova execução recria o que foi excluído e mantém o que foi editado (exceto o nome, como descrito acima). Excluir uma loja exclui os produtos dela.
+- Se uma conta existente usar só o e-mail ou só o nome de usuário de demonstração, ou se um dos slugs de subcategoria já existir fora de Eletrônicos, nada de demonstração é gravado (as categorias oficiais permanecem).
+
+##### Pendências
+
+Itens do inventário do Figma que **não** são cadastrados, porque não constam da lista de produtos com preço e disponibilidade legíveis:
+
+- **Mercado:** Red Bull.
+- **Eletrônicos:** Computador Lenovo (segundo card), Apple Watch, Cabo USB, Micro SD, iPhone 4, PlayStation 5, Galaxy Z Fold, Nintendo 3DS, Galaxy A06, Monitor (dois cards), Teclado e Mouse, Mouse, Smart TV Neo, Soundbar, Vitrola e Smart TV.
+- **Beleza:** segundos cards de Contorno, Primer e Blush; dois outros cards de Gel Perfumado; Batom Líquido, Caneta de Maquiagem, Gel de Banho, Mist Perfumado, Gel para S., Sombras, Pó, Sombra Líquida, Creme para Mão e Delineador.
+
+Cards com rótulo inconsistente no próprio Figma, que precisam de revisão: "Comp. Samsung" com foto de batom, "iPhone 16" com foto de cosmético, "Comp. Lenovo" com foto de fones e "iPhone 15" com foto de relógio. Os produtos de mesmo nome cadastrados acima usam apenas o preço e a disponibilidade da lista de produtos legíveis.
+
+##### Limitações
+
+- As lojas de Casa e Moda ficam sem produtos, e Farmácia, Jogos e Brinquedos não têm lojas nem produtos.
+- O iPhone 15 e o Xbox Series X aparecem, num frame de categoria, com logos de lojas que não estão na lista; por isso o vínculo deles é de demonstração.
+- As subcategorias dos três produtos da Repiit foram deduzidas pelo tipo do produto. Os demais ficam direto na categoria raiz, e os filtros Celulares, Acessórios e Outros ficam vazios.
+- A API não tem unidade de medida: o preço por quilo é registrado só na descrição, e as telas que não mostram a descrição não indicam "/kg".
+- O repositório não tem arquivos de logos nem de imagens de produtos, e a API não faz upload. Nenhuma URL foi inventada ou baixada de terceiros: os campos ficam vazios.
+
+##### Exibição no frontend
+
+Situação conferida em 26/11/2026:
+
+- Na branch `dev` do frontend (`1d6982f`), a home consulta `/products?category=`, que a API recusa, e a página de categoria usa dados fixos. **Os produtos da seed não aparecem.**
+- Na branch `feature/integracao-produtos` (`e0ccf45`, ainda não integrada), a página de categoria inclui as subcategorias diretas. **A home não inclui subcategorias**: os três produtos da Repiit aparecem só na página de Eletrônicos. A home mostra até 5 produtos por categoria raiz.
+
+**Pendência:** enquanto a `dev` do frontend não consumir a API de produtos, ela não exibe os produtos da seed. A branch `feature/integracao-produtos` precisa de um pull request próprio no repositório do frontend; até 26/11/2026 nenhum havia sido aberto.
+
 ### Produtos
 
 Um produto pertence a uma loja e a uma categoria. As lojas são criadas e geridas pelas rotas de [Lojas](#lojas).
