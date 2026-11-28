@@ -44,6 +44,15 @@ describe('API documentation (e2e)', () => {
     expect(routes.sort()).toEqual(
       [
         'DELETE /categories/{id}',
+        'DELETE /comments/{id}',
+        'GET /comments/rating/{productRatingId}',
+        'GET /comments/store-rating/{storeRatingId}',
+        'PATCH /comments/{id}',
+        'POST /comments',
+        'DELETE /store-ratings/{id}',
+        'GET /stores/{storeId}/ratings',
+        'PATCH /store-ratings/{id}',
+        'POST /stores/{storeId}/ratings',
         'DELETE /users/me',
         'GET /categories',
         'GET /categories/by-slug/{slug}',
@@ -187,6 +196,25 @@ describe('API documentation (e2e)', () => {
       '403',
     );
     expect(document.paths['/ratings'].post.responses).toHaveProperty('409');
+  });
+
+  it('requires a bearer token for review and comment writes only', () => {
+    const ratings = document.paths['/stores/{storeId}/ratings'];
+    const rating = document.paths['/store-ratings/{id}'];
+    expect(ratings.get.security).toBeUndefined();
+    for (const operation of [
+      ratings.post,
+      rating.patch,
+      rating.delete,
+      document.paths['/comments'].post,
+      document.paths['/comments/{id}'].patch,
+      document.paths['/comments/{id}'].delete,
+    ]) {
+      expect(operation.security).toEqual([{ bearer: [] }]);
+    }
+    expect(
+      document.paths['/comments/store-rating/{storeRatingId}'].get.security,
+    ).toBeUndefined();
   });
 
   it('never documents credentials in the user representation', () => {
