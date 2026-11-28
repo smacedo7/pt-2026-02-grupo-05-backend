@@ -31,6 +31,7 @@ export class ProductResponseDto {
 
 export class ProductListItemDto extends ProductResponseDto {
   @ApiProperty({
+    type: String,
     example: 'https://cdn.exemplo.com/produtos/fone-frente.jpg',
     nullable: true,
     description:
