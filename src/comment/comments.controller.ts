@@ -31,7 +31,10 @@ export class CommentsController {
   @UseGuards(JwtAuthGuard)
   @Post()
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create a comment or reply', description: 'Any authenticated user can comment on a product rating.' })
+  @ApiOperation({
+    summary: 'Create a comment or reply',
+    description: 'Any authenticated user can comment on a product rating or a store rating.',
+  })
   @ApiCreatedResponse({ type: CommentResponseDto })
   @ApiBadRequestResponse(ValidationErrorResponse)
   @ApiUnauthorizedResponse(UnauthorizedResponse)
@@ -45,6 +48,16 @@ export class CommentsController {
   @ApiOkResponse({ type: [CommentResponseDto] })
   findAll(@Param('productRatingId', ParseIntPipe) productRatingId: number): Promise<CommentResponseDto[]> {
     return this.comments.findAllByRating(productRatingId);
+  }
+
+  @Get('store-rating/:storeRatingId')
+  @ApiOperation({ summary: 'List comments by store rating', description: 'Public. Returns root comments and their nested replies.' })
+  @ApiParam({ name: 'storeRatingId', example: 1 })
+  @ApiOkResponse({ type: [CommentResponseDto] })
+  findAllByStoreRating(
+    @Param('storeRatingId', ParseIntPipe) storeRatingId: number,
+  ): Promise<CommentResponseDto[]> {
+    return this.comments.findAllByStoreRating(storeRatingId);
   }
 
   @UseGuards(JwtAuthGuard)

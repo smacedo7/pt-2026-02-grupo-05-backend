@@ -34,6 +34,7 @@ describe('CommentsService', () => {
   const db = {
     user: { findUnique: jest.fn() },
     productRating: { findUnique: jest.fn() },
+    storeRating: { findUnique: jest.fn() },
     ratingComment: {
       findUnique: jest.fn(),
       findMany: jest.fn(),
@@ -69,6 +70,27 @@ describe('CommentsService', () => {
 
       await service.create(7, { productRatingId: 2, content: 'Concordo!', parentId: 1 });
       expect(db.ratingComment.create.mock.calls[0][0].data.parentId).toBe(1);
+    });
+
+    it('creates a store rating comment', async () => {
+      db.storeRating.findUnique.mockResolvedValue({ id: 5 });
+      db.ratingComment.create.mockResolvedValue(
+        row({ productRatingId: null, storeRatingId: 5 }),
+      );
+
+      const result = await service.create(7, { storeRatingId: 5, content: 'Obrigado!' });
+      expect(result.storeRatingId).toBe(5);
+      expect(result.productRatingId).toBeNull();
+    });
+
+    it('rejects when both or neither rating ids are provided', async () => {
+      const errBoth = await service
+        .create(7, { productRatingId: 2, storeRatingId: 5, content: 'X' })
+        .catch((e) => e);
+      expect(codeOf(errBoth)).toBe('RATING_TARGET_INVALID');
+
+      const errNone = await service.create(7, { content: 'X' }).catch((e) => e);
+      expect(codeOf(errNone)).toBe('RATING_TARGET_INVALID');
     });
 
     it('answers 400 RATING_NOT_FOUND for a missing product rating', async () => {

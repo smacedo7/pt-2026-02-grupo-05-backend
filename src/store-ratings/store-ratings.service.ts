@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { CreateStoreRatingDto } from './dto/create-store-rating.dto';
 import {
   StoreRatingResponseDto,
   StoreRatingsListResponseDto,
@@ -39,18 +40,45 @@ type RatingRow = Prisma.StoreRatingGetPayload<{ select: typeof RATING_SELECT }>;
 export class StoreRatingsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async create(
+    userId: number,
+    storeId: number,
+    dto: CreateStoreRatingDto,
+  ): Promise<StoreRatingResponseDto> {
+    return this.write(userId, async (tx) => {
+      const store = await tx.store.findUnique({
+        where: { id: storeId },
+        select: { id: true },
+      });
+      if (!store) {
+        throw storeNotFound();
+      }
+
+      const comment =
+        typeof dto.comment === 'string' && dto.comment.trim()
+          ? dto.comment.trim()
+          : null;
+
+      const created = await tx.storeRating.create({
+        data: {
+          userId,
+          storeId,
+          rating: dto.rating,
+          comment,
+        },
+        select: RATING_SELECT,
+      });
+      return toResponse(created);
+    });
+  }
+
   async findByStore(storeId: number): Promise<StoreRatingsListResponseDto> {
     const store = await this.prisma.store.findUnique({
       where: { id: storeId },
       select: { id: true },
     });
     if (!store) {
-      throw new NotFoundException({
-        statusCode: 404,
-        error: 'Not Found',
-        code: 'STORE_NOT_FOUND',
-        message: 'store not found',
-      });
+      throw storeNotFound();
     }
 
     const rows = await this.prisma.storeRating.findMany({
@@ -171,6 +199,15 @@ function toResponse(row: RatingRow): StoreRatingResponseDto {
   };
 }
 
+function storeNotFound(): NotFoundException {
+  return new NotFoundException({
+    statusCode: 404,
+    error: 'Not Found',
+    code: 'STORE_NOT_FOUND',
+    message: 'store not found',
+  });
+}
+
 function ratingNotFound(): NotFoundException {
   return new NotFoundException({
     statusCode: 404,
@@ -185,6 +222,20 @@ function translateKnownError(error: unknown): unknown {
     return error;
   }
   switch (error.code) {
+    case 'P2002':
+      return new ConflictException({
+        statusCode: 409,
+        error: 'Conflict',
+        code: 'STORE_RATING_ALREADY_EXISTS',
+        message: 'you have already rated this store; edit your rating instead',
+      });
+    case 'P2003':
+      return new ConflictException({
+        statusCode: 409,
+        error: 'Conflict',
+        code: 'REFERENCE_CHANGED',
+        message: 'the store changed at the same time; try again',
+      });
     case 'P2025':
       return ratingNotFound();
     case 'P2034':

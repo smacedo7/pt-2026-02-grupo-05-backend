@@ -6,14 +6,28 @@ export class CommentUserResponseDto {
 
   @ApiProperty({ example: 'Jotaro Kujo' })
   name: string;
+
+  @ApiProperty({ example: 'jotaro.kujo', required: false })
+  username?: string;
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    required: false,
+    example: 'https://exemplo.com/avatar.png',
+  })
+  profilePictureUrl?: string | null;
 }
 
 export class CommentResponseDto {
   @ApiProperty({ example: 1 })
   id: number;
 
-  @ApiProperty({ example: 1 })
-  productRatingId: number;
+  @ApiProperty({ example: 1, nullable: true })
+  productRatingId: number | null;
+
+  @ApiProperty({ example: null, nullable: true })
+  storeRatingId: number | null;
 
   @ApiProperty({ example: 1, nullable: true })
   parentId: number | null;

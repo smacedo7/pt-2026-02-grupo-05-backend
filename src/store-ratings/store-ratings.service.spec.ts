@@ -1,8 +1,10 @@
 import {
+  ConflictException,
   ForbiddenException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { StoreRatingsService } from './store-ratings.service';
 
@@ -32,6 +34,7 @@ describe('StoreRatingsService', () => {
     user: { findUnique: jest.fn() },
     store: { findUnique: jest.fn() },
     storeRating: {
+      create: jest.fn(),
       findMany: jest.fn(),
       findUnique: jest.fn(),
       findUniqueOrThrow: jest.fn(),
@@ -49,6 +52,43 @@ describe('StoreRatingsService', () => {
     );
     db.user.findUnique.mockResolvedValue({ id: 1 });
     service = new StoreRatingsService(db as unknown as PrismaService);
+  });
+
+  describe('create', () => {
+    it('creates a store rating when store exists', async () => {
+      db.store.findUnique.mockResolvedValue({ id: 3 });
+      db.storeRating.create.mockResolvedValue(row({ rating: 5, comment: 'Top!' }));
+
+      const result = await service.create(1, 3, { rating: 5, comment: '  Top!  ' });
+      expect(db.storeRating.create.mock.calls[0][0].data).toEqual({
+        userId: 1,
+        storeId: 3,
+        rating: 5,
+        comment: 'Top!',
+      });
+      expect(result.rating).toBe(5);
+      expect(result.comment).toBe('Top!');
+    });
+
+    it('throws 404 STORE_NOT_FOUND when store does not exist', async () => {
+      db.store.findUnique.mockResolvedValue(null);
+      await expect(service.create(1, 999, { rating: 5 })).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    });
+
+    it('throws 409 STORE_RATING_ALREADY_EXISTS on duplicate rating (P2002)', async () => {
+      db.store.findUnique.mockResolvedValue({ id: 3 });
+      db.storeRating.create.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('dup', {
+          code: 'P2002',
+          clientVersion: 'test',
+        }),
+      );
+      await expect(service.create(1, 3, { rating: 4 })).rejects.toBeInstanceOf(
+        ConflictException,
+      );
+    });
   });
 
   describe('findByStore', () => {

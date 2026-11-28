@@ -25,6 +25,12 @@ describe('CreateCommentDto', () => {
     expect(await messagesFor(CreateCommentDto, valid)).toEqual([]);
   });
 
+  it('accepts a valid storeRatingId without productRatingId', async () => {
+    expect(
+      await messagesFor(CreateCommentDto, { storeRatingId: 1, content: 'Muito bom!' }),
+    ).toEqual([]);
+  });
+
   it('accepts a valid reply', async () => {
     expect(await messagesFor(CreateCommentDto, { ...valid, parentId: 2 })).toEqual([]);
   });

@@ -8,12 +8,14 @@ import {
   Param,
   ParseIntPipe,
   Patch,
+  Post,
   UseGuards,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
+  ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
@@ -26,6 +28,7 @@ import {
 import { UnauthorizedResponse, ValidationErrorResponse } from '../api-errors';
 import { CurrentUserId } from '../auth/current-user-id.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CreateStoreRatingDto } from './dto/create-store-rating.dto';
 import {
   StoreRatingResponseDto,
   StoreRatingsListResponseDto,
@@ -37,6 +40,28 @@ import { StoreRatingsService } from './store-ratings.service';
 @Controller()
 export class StoreRatingsController {
   constructor(private readonly storeRatings: StoreRatingsService) {}
+
+  @UseGuards(JwtAuthGuard)
+  @Post('stores/:storeId/ratings')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Rate a store',
+    description:
+      'Any authenticated user can rate a store once, with 0 to 5 stars and an optional comment.',
+  })
+  @ApiParam({ name: 'storeId', example: 1 })
+  @ApiCreatedResponse({ type: StoreRatingResponseDto })
+  @ApiBadRequestResponse(ValidationErrorResponse)
+  @ApiUnauthorizedResponse(UnauthorizedResponse)
+  @ApiNotFoundResponse({ description: 'Store not found.' })
+  @ApiConflictResponse({ description: 'Store already rated by this user.' })
+  create(
+    @CurrentUserId() userId: number,
+    @Param('storeId', ParseIntPipe) storeId: number,
+    @Body() dto: CreateStoreRatingDto,
+  ): Promise<StoreRatingResponseDto> {
+    return this.storeRatings.create(userId, storeId, dto);
+  }
 
   @Get('stores/:storeId/ratings')
   @ApiOperation({ summary: 'List ratings for a store' })
