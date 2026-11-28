@@ -24,6 +24,12 @@ const NOT_OWNER = {
   schema: { example: { statusCode: 403, error: 'Forbidden', code: 'COMMENT_NOT_OWNED', message: 'only the author can edit or delete this comment' } },
 };
 
+const INVALID_CREATE = {
+  description:
+    'Invalid data (see "message"); not exactly one of productRatingId and storeRatingId (RATING_TARGET_INVALID); the rating does not exist (RATING_NOT_FOUND); or the parent comment does not exist (PARENT_NOT_FOUND) or is under another rating (PARENT_MISMATCH).',
+  schema: { example: { statusCode: 400, error: 'Bad Request', code: 'RATING_TARGET_INVALID', message: 'provide exactly one of productRatingId or storeRatingId' } },
+};
+
 @ApiTags('comments')
 @Controller('comments')
 export class CommentsController {
@@ -37,8 +43,9 @@ export class CommentsController {
     description: 'Any authenticated user can comment on a product rating or a store rating.',
   })
   @ApiCreatedResponse({ type: CommentResponseDto })
-  @ApiBadRequestResponse(ValidationErrorResponse)
+  @ApiBadRequestResponse(INVALID_CREATE)
   @ApiUnauthorizedResponse(UnauthorizedResponse)
+  @ApiConflictResponse({ description: 'The rating changed at the same time (REFERENCE_CHANGED or WRITE_CONFLICT).' })
   create(@CurrentUserId() userId: number, @Body() dto: CreateCommentDto): Promise<CommentResponseDto> {
     return this.comments.create(userId, dto);
   }

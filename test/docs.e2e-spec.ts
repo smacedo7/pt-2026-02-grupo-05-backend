@@ -219,6 +219,11 @@ describe('API documentation (e2e)', () => {
     ).toBeUndefined();
     // The owner of a store cannot rate it.
     expect(ratings.post.responses).toHaveProperty('403');
+    expect(document.paths['/comments'].post.responses).toHaveProperty('409');
+    const comment = document.components.schemas.CommentResponseDto.properties;
+    for (const id of ['productRatingId', 'storeRatingId', 'parentId']) {
+      expect(comment[id]).toMatchObject({ type: 'number', nullable: true });
+    }
   });
 
   it('never documents credentials in the user representation', () => {
