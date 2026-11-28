@@ -34,6 +34,7 @@ describe('CommentsService', () => {
   const db = {
     user: { findUnique: jest.fn() },
     productRating: { findUnique: jest.fn() },
+    storeRating: { findUnique: jest.fn() },
     ratingComment: {
       findUnique: jest.fn(),
       findMany: jest.fn(),
@@ -71,6 +72,27 @@ describe('CommentsService', () => {
       expect(db.ratingComment.create.mock.calls[0][0].data.parentId).toBe(1);
     });
 
+    it('creates a store rating comment', async () => {
+      db.storeRating.findUnique.mockResolvedValue({ id: 5 });
+      db.ratingComment.create.mockResolvedValue(
+        row({ productRatingId: null, storeRatingId: 5 }),
+      );
+
+      const result = await service.create(7, { storeRatingId: 5, content: 'Obrigado!' });
+      expect(result.storeRatingId).toBe(5);
+      expect(result.productRatingId).toBeNull();
+    });
+
+    it('rejects when both or neither rating ids are provided', async () => {
+      const errBoth = await service
+        .create(7, { productRatingId: 2, storeRatingId: 5, content: 'X' })
+        .catch((e) => e);
+      expect(codeOf(errBoth)).toBe('RATING_TARGET_INVALID');
+
+      const errNone = await service.create(7, { content: 'X' }).catch((e) => e);
+      expect(codeOf(errNone)).toBe('RATING_TARGET_INVALID');
+    });
+
     it('answers 400 RATING_NOT_FOUND for a missing product rating', async () => {
       db.productRating.findUnique.mockResolvedValue(null);
       const error = await service.create(7, { productRatingId: 99, content: 'X' }).catch(e => e);
@@ -90,6 +112,36 @@ describe('CommentsService', () => {
       const error = await service.create(7, { productRatingId: 2, content: 'X' }).catch(e => e);
       expect(error).toBeInstanceOf(ConflictException);
       expect(codeOf(error)).toBe('REFERENCE_CHANGED');
+    });
+  });
+
+  describe('listing a whole thread', () => {
+    const thread = [
+      row({ id: 1, parentId: null }),
+      row({ id: 2, parentId: 1 }),
+      row({ id: 3, parentId: null }),
+      row({ id: 4, parentId: 2 }),
+    ].map(({ replies: _replies, ...comment }) => comment);
+
+    it('nests replies to replies, reading the rating in one query', async () => {
+      db.ratingComment.findMany.mockResolvedValue(thread);
+
+      const result = await service.findAllByStoreRating(4);
+
+      expect(db.ratingComment.findMany).toHaveBeenCalledTimes(1);
+      expect(db.ratingComment.findMany.mock.calls[0][0].where).toEqual({ storeRatingId: 4 });
+      expect(result.map((c) => c.id)).toEqual([1, 3]);
+      expect(result[0].replies?.[0].id).toBe(2);
+      expect(result[0].replies?.[0].replies?.[0]).toMatchObject({ id: 4, parentId: 2, replies: [] });
+      expect(result[1].replies).toEqual([]);
+    });
+
+    it('keeps product comments newest first', async () => {
+      db.ratingComment.findMany.mockResolvedValue(thread);
+
+      const result = await service.findAllByRating(2);
+
+      expect(result.map((c) => c.id)).toEqual([3, 1]);
     });
   });
 

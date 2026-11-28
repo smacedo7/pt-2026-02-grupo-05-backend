@@ -6,7 +6,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -29,6 +28,7 @@ import {
 import { UnauthorizedResponse, ValidationErrorResponse } from '../api-errors';
 import { CurrentUserId } from '../auth/current-user-id.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { EntityIdPipe } from '../common/pipes/entity-id.pipe';
 import { CreateProductDto } from './dto/create-product.dto';
 import { ListProductsQueryDto } from './dto/list-products.query.dto';
 import {
@@ -143,7 +143,7 @@ export class ProductsController {
   @ApiBadRequestResponse(ValidationErrorResponse)
   @ApiNotFoundResponse(PRODUCT_NOT_FOUND)
   findOne(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', EntityIdPipe) id: number,
   ): Promise<ProductDetailResponseDto> {
     return this.products.findOne(id);
   }
@@ -165,7 +165,7 @@ export class ProductsController {
   @ApiConflictResponse(WRITE_CONFLICT)
   update(
     @CurrentUserId() userId: number,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', EntityIdPipe) id: number,
     @Body() dto: UpdateProductDto,
   ): Promise<ProductDetailResponseDto> {
     return this.products.update(userId, id, dto);
@@ -189,7 +189,7 @@ export class ProductsController {
   @ApiConflictResponse(WRITE_CONFLICT)
   async remove(
     @CurrentUserId() userId: number,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', EntityIdPipe) id: number,
   ): Promise<void> {
     await this.products.remove(userId, id);
   }

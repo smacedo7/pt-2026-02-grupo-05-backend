@@ -6,7 +6,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -29,6 +28,7 @@ import {
 import { UnauthorizedResponse, ValidationErrorResponse } from '../api-errors';
 import { CurrentUserId } from '../auth/current-user-id.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { EntityIdPipe } from '../common/pipes/entity-id.pipe';
 import { CategoriesService } from './categories.service';
 import { SlugParamPipe } from './slug-param.pipe';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -160,7 +160,7 @@ export class CategoriesController {
   @ApiBadRequestResponse(ValidationErrorResponse)
   @ApiNotFoundResponse(CATEGORY_NOT_FOUND)
   findOne(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', EntityIdPipe) id: number,
   ): Promise<CategoryDetailResponseDto> {
     return this.categories.findOne(id);
   }
@@ -181,7 +181,7 @@ export class CategoriesController {
   @ApiConflictResponse(SLUG_IN_USE)
   update(
     @CurrentUserId() userId: number,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', EntityIdPipe) id: number,
     @Body() dto: UpdateCategoryDto,
   ): Promise<CategoryDetailResponseDto> {
     return this.categories.update(userId, id, dto);
@@ -203,7 +203,7 @@ export class CategoriesController {
   @ApiConflictResponse(CATEGORY_IN_USE)
   async remove(
     @CurrentUserId() userId: number,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', EntityIdPipe) id: number,
   ): Promise<void> {
     await this.categories.remove(userId, id);
   }

@@ -25,6 +25,12 @@ describe('CreateCommentDto', () => {
     expect(await messagesFor(CreateCommentDto, valid)).toEqual([]);
   });
 
+  it('accepts a valid storeRatingId without productRatingId', async () => {
+    expect(
+      await messagesFor(CreateCommentDto, { storeRatingId: 1, content: 'Muito bom!' }),
+    ).toEqual([]);
+  });
+
   it('accepts a valid reply', async () => {
     expect(await messagesFor(CreateCommentDto, { ...valid, parentId: 2 })).toEqual([]);
   });
@@ -39,6 +45,14 @@ describe('CreateCommentDto', () => {
   ])('rejects %s', async (_label, patch, field) => {
     const messages = await messagesFor(CreateCommentDto, { ...valid, ...patch });
     expect(messages.some((message) => message.startsWith(field))).toBe(true);
+  });
+});
+
+describe('comment content', () => {
+  it('accepts several lines on create and edit', async () => {
+    const content = 'linha 1\nlinha 2';
+    expect(await messagesFor(CreateCommentDto, { ...valid, content })).toEqual([]);
+    expect(await messagesFor(UpdateCommentDto, { content })).toEqual([]);
   });
 });
 
