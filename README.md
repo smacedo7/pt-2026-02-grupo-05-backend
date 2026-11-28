@@ -196,6 +196,15 @@ Base local: `http://localhost:3001`. Referência completa e testável em `/docs`
 | Criar loja | `POST /stores` | Bearer | 201 |
 | Editar loja | `PATCH /stores/:id` | Bearer (dono da loja) | 200 |
 | Excluir loja | `DELETE /stores/:id` | Bearer (dono da loja) | 204 |
+| Listar avaliações da loja | `GET /stores/:storeId/ratings` | pública | 200 |
+| Avaliar loja | `POST /stores/:storeId/ratings` | Bearer (menos o dono) | 201 |
+| Editar avaliação de loja | `PATCH /store-ratings/:id` | Bearer (autor) | 200 |
+| Excluir avaliação de loja | `DELETE /store-ratings/:id` | Bearer (autor) | 204 |
+| Listar comentários de uma avaliação de produto | `GET /comments/rating/:productRatingId` | pública | 200 |
+| Listar comentários de uma avaliação de loja | `GET /comments/store-rating/:storeRatingId` | pública | 200 |
+| Comentar ou responder | `POST /comments` | Bearer | 201 |
+| Editar comentário | `PATCH /comments/:id` | Bearer (autor) | 200 |
+| Excluir comentário | `DELETE /comments/:id` | Bearer (autor) | 204 |
 
 Não existe listagem de usuários nem consulta por id.
 
@@ -423,6 +432,42 @@ curl -X POST http://localhost:3001/stores \
   -d '{"categoryId":1,"name":"Loja do João","description":"Eletrônicos"}'
 ```
 
+### Avaliações de loja
+
+- **Campos:** `rating` (inteiro de `0` a `5`, obrigatório) e `comment` (opcional, até 5000 caracteres, aceita quebras de linha e `null`; na criação, os espaços das pontas são removidos e um texto só de espaços vira `null`). A resposta traz também `id`, `userId`, `storeId`, `createdAt`, `updatedAt` e `user` (`id`, `name`, `username`, `profilePictureUrl`).
+- **Autor e loja:** o autor é sempre a conta do token e a loja é a da rota. `userId` ou `storeId` no corpo respondem `400`.
+- **Uma por loja:** cada conta avalia uma loja uma única vez. Uma segunda tentativa responde `409` (`STORE_RATING_ALREADY_EXISTS`) e nada muda; para mudar a nota, edite a avaliação. Depois de excluí-la, é possível avaliar de novo.
+- **Dono da loja:** não pode avaliar a própria loja (`403` `STORE_RATING_OWN_STORE`), mas pode comentar nas avaliações dela.
+- **Erros ao criar:** loja inexistente responde `404` (`STORE_NOT_FOUND`); id que não seja um inteiro positivo de 32 bits responde `400`; alteração simultânea responde `409` (`REFERENCE_CHANGED` ou `WRITE_CONFLICT`).
+- **Edição e exclusão:** só o autor (`403` `STORE_RATING_NOT_OWNED`; inexistente, `404` `STORE_RATING_NOT_FOUND`). Excluir remove também os comentários da avaliação.
+- **Listagem:** `GET /stores/:storeId/ratings` devolve `{ averageRating, totalCount, ratings }`, das atualizadas mais recentemente para as mais antigas. `averageRating` é `null` quando não há avaliações.
+
+```bash
+curl -X POST http://localhost:3001/stores/1/ratings \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"rating":5,"comment":"Ótimo atendimento"}'
+```
+
+### Comentários em avaliações
+
+Um comentário responde a **exatamente uma** avaliação, de produto ou de loja.
+
+- **Corpo:** `content` (até 2000 caracteres, não pode ser só espaços; aceita quebras de linha e tabulação), **um** entre `productRatingId` e `storeRatingId`, e `parentId` opcional para responder a outro comentário.
+- **Alvo:** nenhum ou os dois respondem `400` (`RATING_TARGET_INVALID`); um alvo `null` também responde `400`. Avaliação inexistente, de produto ou de loja, responde `400` (`RATING_NOT_FOUND`).
+- **Respostas:** o comentário-pai precisa ser da mesma avaliação, do mesmo tipo (`400` `PARENT_MISMATCH`; pai inexistente, `PARENT_NOT_FOUND`).
+- **Formato:** `id`, `productRatingId`, `storeRatingId` (um deles é `null`), `parentId`, `content`, `createdAt`, `updatedAt`, `user` (`id`, `name`, `username`, `profilePictureUrl`) e `replies`.
+- **Listagem:** a conversa completa. Cada comentário traz em `replies` as respostas diretas, que trazem as suas, sem limite de níveis. Respostas vão da mais antiga para a mais nova. Os comentários sem pai vão do mais antigo para o mais novo nas avaliações de loja e do mais novo para o mais antigo nas de produto. Avaliação sem comentários ou inexistente devolve lista vazia.
+- **Criar e editar:** a resposta traz somente as respostas diretas do comentário.
+- **Edição e exclusão:** só o autor (`403` `COMMENT_NOT_OWNED`). Excluir um comentário remove as respostas dele.
+
+```bash
+curl -X POST http://localhost:3001/comments \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"storeRatingId":1,"content":"Obrigada pela avaliação!"}'
+```
+
 ### Usuário
 
 Todas as respostas que devolvem um usuário têm este formato. Senha e hash nunca aparecem.
@@ -522,6 +567,7 @@ As mensagens vêm em inglês. No frontend, decida pelo `statusCode`, pelo `code`
 | 409 | e-mail ou username em uso (cadastro e edição) | `code: "UNIQUE_CONFLICT"`, `fields` com os campos |
 | 400 | código de recuperação inválido, expirado ou já usado | `code: "RESET_CODE_INVALID"` |
 | 400 | senha atual incorreta na troca de senha | `code: "CURRENT_PASSWORD_INCORRECT"` |
+| 400 | id na rota que não é um inteiro positivo de 32 bits, em qualquer rota | `message: "id must be a positive integer"` |
 | 500 | erro inesperado | `message: "Internal server error"`; o detalhe fica só no log do servidor |
 
 ```json
