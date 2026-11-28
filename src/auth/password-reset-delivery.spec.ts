@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import {
   DevelopmentPasswordResetDelivery,
+  PasswordResetDelivery,
   passwordResetDeliveryFor,
   UnconfiguredPasswordResetDelivery,
 } from './password-reset-delivery';
@@ -50,7 +51,9 @@ describe('password reset delivery', () => {
     const error = jest.spyOn(Logger.prototype, 'error').mockImplementation();
     const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
     const log = jest.spyOn(Logger.prototype, 'log').mockImplementation();
-    const delivery = new UnconfiguredPasswordResetDelivery();
+    // Through the interface, as the application calls it: with e-mail and code.
+    const delivery: PasswordResetDelivery =
+      new UnconfiguredPasswordResetDelivery();
 
     await expect(delivery.deliver('ana@exemplo.com', '042917')).rejects.toThrow(
       'no password reset delivery channel is configured',
