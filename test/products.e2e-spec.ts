@@ -218,6 +218,106 @@ describe('Products (e2e)', () => {
         'Vaso',
       ]);
       expect(response.body[0]).not.toHaveProperty('store');
+      expect(response.body[0].imageUrl).toBeNull();
+    });
+
+    it('8b. includes the imageUrl with the lowest sortOrder', async () => {
+      const s = await scenario();
+      const product = await prisma.product.create({
+        data: {
+          storeId: s.store.id,
+          categoryId: s.category.id,
+          name: 'Cabo',
+          price: 10,
+          stock: 1,
+        },
+      });
+      await prisma.productImage.create({
+        data: {
+          productId: product.id,
+          imageUrl: 'https://exemplo.com/segunda.png',
+          sortOrder: 2,
+        },
+      });
+      await prisma.productImage.create({
+        data: {
+          productId: product.id,
+          imageUrl: 'https://exemplo.com/primeira.png',
+          sortOrder: 0,
+        },
+      });
+
+      const response = await http().get('/products').expect(200);
+      expect(response.body[0].imageUrl).toBe(
+        'https://exemplo.com/primeira.png',
+      );
+    });
+
+    it('8c. gives each product of a page its own image and keeps the other fields', async () => {
+      const s = await scenario();
+      const make = (name: string, images: [string, number][]) =>
+        prisma.product.create({
+          data: {
+            storeId: s.store.id,
+            categoryId: s.category.id,
+            name,
+            price: 10,
+            stock: 1,
+            images: {
+              create: images.map(([file, sortOrder]) => ({
+                imageUrl: `https://exemplo.com/${file}.png`,
+                sortOrder,
+              })),
+            },
+          },
+        });
+      await make('Antena', [['antena', 0]]);
+      await make('Bateria', [
+        ['bateria-verso', 5],
+        ['bateria-frente', 1],
+      ]);
+      await make('Cabo', []);
+      const dock = await make('Dock', [
+        ['dock-frente', 0],
+        ['dock-verso', 1],
+      ]);
+
+      const page = await http().get('/products?limit=3&offset=1').expect(200);
+      expect(
+        page.body.map((p: { name: string; imageUrl: string | null }) => [
+          p.name,
+          p.imageUrl,
+        ]),
+      ).toEqual([
+        ['Bateria', 'https://exemplo.com/bateria-frente.png'],
+        ['Cabo', null],
+        ['Dock', 'https://exemplo.com/dock-frente.png'],
+      ]);
+      expect(Object.keys(page.body[0]).sort()).toEqual([
+        'categoryId',
+        'createdAt',
+        'description',
+        'id',
+        'imageUrl',
+        'name',
+        'price',
+        'stock',
+        'storeId',
+        'updatedAt',
+      ]);
+
+      const detail = await http().get(`/products/${dock.id}`).expect(200);
+      expect(detail.body).not.toHaveProperty('imageUrl');
+      expect(
+        detail.body.images.map((i: { sortOrder: number }) => i.sortOrder),
+      ).toEqual([0, 1]);
+
+      // Without the primary image, the next one in order takes its place.
+      await prisma.productImage.deleteMany({
+        where: { productId: dock.id, sortOrder: 0 },
+      });
+      const after = await http().get('/products?offset=3').expect(200);
+      expect(after.body[0].imageUrl).toBe('https://exemplo.com/dock-verso.png');
     });
 
     it('9. filters by store and by category', async () => {

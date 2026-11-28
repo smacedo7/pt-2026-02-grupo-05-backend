@@ -383,8 +383,8 @@ Um produto pertence a uma loja e a uma categoria. As lojas são criadas e gerida
 - **Referências:** loja ou categoria inexistentes respondem `400` (`STORE_NOT_FOUND`, `CATEGORY_NOT_FOUND`).
 - **Edição:** envie só os campos a mudar. A loja não pode ser trocada (`storeId` responde `400`). `description: null` remove a descrição.
 - **Exclusão:** remove também as imagens e avaliações do produto (`ON DELETE CASCADE`). A loja e a categoria permanecem.
-- **Listagem:** `GET /products` ordena por nome e depois por id. Filtros: `storeId` e `categoryId` (categoria exata, sem subcategorias). Paginação: `limit` (padrão 50, máximo 100) e `offset`.
-- **Imagens:** `GET /products/:id` devolve `images` (ordenadas por `sortOrder` e depois `id`; lista vazia se não houver). Para gerenciá-las, veja [Imagens de produtos](#imagens-de-produtos). `images` no corpo de criação ou edição do produto responde `400`.
+- **Listagem:** `GET /products` ordena por nome e depois por id. Filtros: `storeId` e `categoryId` (categoria exata, sem subcategorias). Paginação: `limit` (padrão 50, máximo 100) e `offset`. Cada item traz `imageUrl`: o link da imagem principal (a de menor `sortOrder`) ou `null` se o produto não tiver imagem.
+- **Imagens:** `GET /products/:id` devolve `images` (ordenadas por `sortOrder` e depois `id`; lista vazia se não houver). A listagem traz só a principal, em `imageUrl`; o detalhe e as respostas de criação e edição não têm esse campo. Para gerenciá-las, veja [Imagens de produtos](#imagens-de-produtos). `images` no corpo de criação ou edição do produto responde `400`.
 
 ```bash
 curl -X POST http://localhost:3001/products \

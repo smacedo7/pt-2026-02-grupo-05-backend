@@ -226,6 +226,20 @@ describe('API documentation (e2e)', () => {
     }
   });
 
+  it('documents the primary image only on the product list', () => {
+    const { schemas } = document.components;
+    expect(schemas.ProductListItemDto.properties.imageUrl).toMatchObject({
+      type: 'string',
+      nullable: true,
+    });
+    expect(schemas.ProductResponseDto.properties).not.toHaveProperty(
+      'imageUrl',
+    );
+    expect(schemas.ProductDetailResponseDto.properties).not.toHaveProperty(
+      'imageUrl',
+    );
+  });
+
   it('never documents credentials in the user representation', () => {
     expect(
       Object.keys(

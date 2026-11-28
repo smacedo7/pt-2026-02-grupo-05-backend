@@ -33,6 +33,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { ListProductsQueryDto } from './dto/list-products.query.dto';
 import {
   ProductDetailResponseDto,
+  ProductListItemDto,
   ProductResponseDto,
 } from './dto/product-response.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -124,11 +125,11 @@ export class ProductsController {
   @ApiOperation({
     summary: 'List products',
     description:
-      'Public. Ordered by name, then id. Filter by storeId and/or categoryId (exact category, subcategories not included). Paginated with limit (default 50, max 100) and offset.',
+      'Public. Ordered by name, then id. Includes imageUrl (primary image, or null). Filter by storeId and/or categoryId (exact category, subcategories not included). Paginated with limit (default 50, max 100) and offset.',
   })
-  @ApiOkResponse({ type: [ProductResponseDto] })
+  @ApiOkResponse({ type: [ProductListItemDto] })
   @ApiBadRequestResponse(ValidationErrorResponse)
-  findAll(@Query() query: ListProductsQueryDto): Promise<ProductResponseDto[]> {
+  findAll(@Query() query: ListProductsQueryDto): Promise<ProductListItemDto[]> {
     return this.products.findAll(query);
   }
 

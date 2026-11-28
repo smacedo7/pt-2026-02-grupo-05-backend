@@ -29,6 +29,17 @@ export class ProductResponseDto {
   updatedAt: string;
 }
 
+export class ProductListItemDto extends ProductResponseDto {
+  @ApiProperty({
+    type: String,
+    example: 'https://cdn.exemplo.com/produtos/fone-frente.jpg',
+    nullable: true,
+    description:
+      'URL of the primary image (lowest sortOrder, then id), or null when the product has no image.',
+  })
+  imageUrl: string | null;
+}
+
 export class StoreReferenceDto {
   @ApiProperty({ example: 1 })
   id: number;
