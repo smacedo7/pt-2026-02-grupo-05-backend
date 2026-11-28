@@ -1,5 +1,6 @@
 import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
 import { IsOptional } from 'class-validator';
+import { WhenPresent } from '../../common/validators/when-present.decorator';
 import { IsEntityId } from '../../products/dto/product-fields';
 import { IsCommentContent, CONTENT_MAX_LENGTH } from './comment-fields';
 
@@ -9,7 +10,7 @@ export class CreateCommentDto {
     description:
       'Id of the product rating being commented on. Provide either productRatingId or storeRatingId.',
   })
-  @IsOptional()
+  @WhenPresent()
   @IsEntityId()
   productRatingId?: number;
 
@@ -18,7 +19,7 @@ export class CreateCommentDto {
     description:
       'Id of the store rating being commented on. Provide either storeRatingId or productRatingId.',
   })
-  @IsOptional()
+  @WhenPresent()
   @IsEntityId()
   storeRatingId?: number;
 

@@ -204,6 +204,21 @@ describe('Rating comments (e2e)', () => {
       expect(await prisma.ratingComment.count()).toBe(0);
     });
 
+    it.each([
+      ['a null store target', { storeRatingId: null }],
+      ['a null product target', { productRatingId: null }],
+      [
+        'a null second target',
+        { productRatingId: SHARED_ID, storeRatingId: null },
+      ],
+    ])('answers 400 for %s', async (_label, target) => {
+      const s = await scenario();
+
+      await comment(s.anaToken, { ...target, content: 'x' }).expect(400);
+
+      expect(await prisma.ratingComment.count()).toBe(0);
+    });
+
     it('answers RATING_NOT_FOUND for a missing rating of either kind', async () => {
       const s = await scenario();
 
