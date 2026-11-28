@@ -289,6 +289,62 @@ describe('Rating comments (e2e)', () => {
       },
     );
 
+    it.each([
+      ['storeRatingId', listStore],
+      ['productRatingId', listProduct],
+    ])(
+      'lists replies to replies under their parent (%s)',
+      async (target, list) => {
+        const s = await scenario();
+        const ids: number[] = [];
+        for (const content of ['raiz', 'resposta', 'resposta da resposta']) {
+          const created = await comment(s.anaToken, {
+            [target]: SHARED_ID,
+            parentId: ids.at(-1),
+            content,
+          }).expect(201);
+          ids.push(created.body.id);
+        }
+
+        const [root] = await list(SHARED_ID);
+
+        expect(root.id).toBe(ids[0]);
+        expect(root.replies[0].id).toBe(ids[1]);
+        expect(root.replies[0].replies[0]).toMatchObject({
+          id: ids[2],
+          parentId: ids[1],
+          content: 'resposta da resposta',
+          replies: [],
+        });
+      },
+    );
+
+    it('lists a very long chain of replies', async () => {
+      const s = await scenario();
+      let parentId: number | null = null;
+      for (let level = 0; level < 300; level++) {
+        const created: { id: number } = await prisma.ratingComment.create({
+          data: {
+            userId: s.ana,
+            storeRatingId: SHARED_ID,
+            parentId,
+            content: `nível ${level}`,
+          },
+        });
+        parentId = created.id;
+      }
+
+      let [node] = await listStore(SHARED_ID);
+      let levels = 1;
+      while (node.replies.length > 0) {
+        [node] = node.replies;
+        levels++;
+      }
+
+      expect(levels).toBe(300);
+      expect(node.id).toBe(parentId);
+    });
+
     it('answers 400 PARENT_NOT_FOUND for a missing parent', async () => {
       const s = await scenario();
 

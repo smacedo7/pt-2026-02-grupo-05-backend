@@ -115,6 +115,36 @@ describe('CommentsService', () => {
     });
   });
 
+  describe('listing a whole thread', () => {
+    const thread = [
+      row({ id: 1, parentId: null }),
+      row({ id: 2, parentId: 1 }),
+      row({ id: 3, parentId: null }),
+      row({ id: 4, parentId: 2 }),
+    ].map(({ replies: _replies, ...comment }) => comment);
+
+    it('nests replies to replies, reading the rating in one query', async () => {
+      db.ratingComment.findMany.mockResolvedValue(thread);
+
+      const result = await service.findAllByStoreRating(4);
+
+      expect(db.ratingComment.findMany).toHaveBeenCalledTimes(1);
+      expect(db.ratingComment.findMany.mock.calls[0][0].where).toEqual({ storeRatingId: 4 });
+      expect(result.map((c) => c.id)).toEqual([1, 3]);
+      expect(result[0].replies?.[0].id).toBe(2);
+      expect(result[0].replies?.[0].replies?.[0]).toMatchObject({ id: 4, parentId: 2, replies: [] });
+      expect(result[1].replies).toEqual([]);
+    });
+
+    it('keeps product comments newest first', async () => {
+      db.ratingComment.findMany.mockResolvedValue(thread);
+
+      const result = await service.findAllByRating(2);
+
+      expect(result.map((c) => c.id)).toEqual([3, 1]);
+    });
+  });
+
   describe('update', () => {
     it("allows the author to update", async () => {
       db.ratingComment.findUnique.mockResolvedValue({ userId: 7 });

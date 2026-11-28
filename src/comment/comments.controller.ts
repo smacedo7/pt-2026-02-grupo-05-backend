@@ -44,7 +44,7 @@ export class CommentsController {
   }
 
   @Get('rating/:productRatingId')
-  @ApiOperation({ summary: 'List comments by product rating', description: 'Public. Returns root comments and their nested replies.' })
+  @ApiOperation({ summary: 'List comments by product rating', description: 'Public. Returns root comments, each with its replies, replies to replies included.' })
   @ApiParam({ name: 'productRatingId', example: 1 })
   @ApiOkResponse({ type: [CommentResponseDto] })
   findAll(@Param('productRatingId', EntityIdPipe) productRatingId: number): Promise<CommentResponseDto[]> {
@@ -52,7 +52,7 @@ export class CommentsController {
   }
 
   @Get('store-rating/:storeRatingId')
-  @ApiOperation({ summary: 'List comments by store rating', description: 'Public. Returns root comments and their nested replies.' })
+  @ApiOperation({ summary: 'List comments by store rating', description: 'Public. Returns root comments, each with its replies, replies to replies included.' })
   @ApiParam({ name: 'storeRatingId', example: 1 })
   @ApiOkResponse({ type: [CommentResponseDto] })
   findAllByStoreRating(

@@ -33,6 +33,11 @@ type CommentWithRelations = Prisma.RatingCommentGetPayload<{
   include: typeof INCLUDE_RELATIONS;
 }>;
 
+// A comment with its author; direct replies come along only after a write.
+type CommentRow = Omit<CommentWithRelations, 'replies'> & {
+  replies?: Omit<CommentWithRelations, 'replies'>[];
+};
+
 @Injectable()
 export class CommentsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -70,22 +75,15 @@ export class CommentsService {
     });
   }
 
+  // Product comments: newest conversation first.
   async findAllByRating(productRatingId: number): Promise<CommentResponseDto[]> {
-    const comments = await this.prisma.ratingComment.findMany({
-      where: { productRatingId, parentId: null },
-      include: INCLUDE_RELATIONS,
-      orderBy: { createdAt: 'desc' },
-    });
-    return comments.map(toResponse);
+    const roots = await this.findThread({ productRatingId });
+    return roots.reverse();
   }
 
+  // Store comments: in the order they were written, as the page appends them.
   async findAllByStoreRating(storeRatingId: number): Promise<CommentResponseDto[]> {
-    const comments = await this.prisma.ratingComment.findMany({
-      where: { storeRatingId, parentId: null },
-      include: INCLUDE_RELATIONS,
-      orderBy: { createdAt: 'asc' },
-    });
-    return comments.map(toResponse);
+    return this.findThread({ storeRatingId });
   }
 
   async update(userId: number, id: number, dto: UpdateCommentDto): Promise<CommentResponseDto> {
@@ -171,6 +169,29 @@ export class CommentsService {
     }
   }
 
+  // Every comment of one rating, read in a single query and assembled as a tree,
+  // so replies to replies are listed too. Roots and replies go oldest first.
+  private async findThread(target: Prisma.RatingCommentWhereInput): Promise<CommentResponseDto[]> {
+    const comments = await this.prisma.ratingComment.findMany({
+      where: target,
+      include: { user: { select: USER_SELECT } },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+
+    const nodes = new Map(
+      comments.map((comment) => {
+        const replies: CommentResponseDto[] = [];
+        return [comment.id, Object.assign(toResponse(comment), { replies })];
+      }),
+    );
+    const roots: CommentResponseDto[] = [];
+    for (const node of nodes.values()) {
+      if (node.parentId === null) roots.push(node);
+      else nodes.get(node.parentId)?.replies.push(node);
+    }
+    return roots;
+  }
+
   private async write<T>(userId: number, action: (tx: Tx) => Promise<T>): Promise<T> {
     try {
       return await this.prisma.$transaction(
@@ -200,7 +221,7 @@ export class CommentsService {
   }
 }
 
-function toResponse(comment: CommentWithRelations): CommentResponseDto {
+function toResponse(comment: CommentRow): CommentResponseDto {
   return {
     id: comment.id,
     productRatingId: comment.productRatingId ?? null,
@@ -219,7 +240,7 @@ function toResponse(comment: CommentWithRelations): CommentResponseDto {
         ? { profilePictureUrl: comment.user.profilePictureUrl }
         : {}),
     },
-    replies: comment.replies?.map((reply) => toResponse(reply as CommentWithRelations)),
+    replies: comment.replies?.map((reply) => toResponse(reply)),
   };
 }
 
