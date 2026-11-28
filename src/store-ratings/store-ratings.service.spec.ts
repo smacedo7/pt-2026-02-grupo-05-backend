@@ -70,6 +70,16 @@ describe('StoreRatingsService', () => {
       expect(result.comment).toBe('Top!');
     });
 
+    it('throws 403 STORE_RATING_OWN_STORE when the owner rates the store', async () => {
+      db.store.findUnique.mockResolvedValue({ id: 3, userId: 1 });
+
+      await expect(service.create(1, 3, { rating: 5 })).rejects.toMatchObject({
+        status: 403,
+        response: { code: 'STORE_RATING_OWN_STORE' },
+      });
+      expect(db.storeRating.create).not.toHaveBeenCalled();
+    });
+
     it('throws 404 STORE_NOT_FOUND when store does not exist', async () => {
       db.store.findUnique.mockResolvedValue(null);
       await expect(service.create(1, 999, { rating: 5 })).rejects.toBeInstanceOf(

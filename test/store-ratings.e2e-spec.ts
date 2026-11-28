@@ -168,6 +168,25 @@ describe('Store ratings (e2e)', () => {
       expect(await prisma.storeRating.count()).toBe(0);
     });
 
+    it('does not let the owner rate the store, but lets them answer a rating', async () => {
+      const s = await scenario();
+
+      const refused = await rate(s.store.id, s.anaToken, { rating: 5 }).expect(
+        403,
+      );
+
+      expect(refused.body.code).toBe('STORE_RATING_OWN_STORE');
+      expect(await prisma.storeRating.count()).toBe(0);
+      const { body } = await rate(s.store.id, s.biaToken, { rating: 3 }).expect(
+        201,
+      );
+      await http()
+        .post('/comments')
+        .set(...bearer(s.anaToken))
+        .send({ storeRatingId: body.id, content: 'obrigada pelo retorno' })
+        .expect(201);
+    });
+
     it('answers 404 for a missing store', async () => {
       const s = await scenario();
 

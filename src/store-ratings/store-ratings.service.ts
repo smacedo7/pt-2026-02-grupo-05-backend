@@ -48,10 +48,19 @@ export class StoreRatingsService {
     return this.write(userId, async (tx) => {
       const store = await tx.store.findUnique({
         where: { id: storeId },
-        select: { id: true },
+        select: { userId: true },
       });
       if (!store) {
         throw storeNotFound();
+      }
+      // The owner answers ratings with comments, but never rates the store.
+      if (store.userId === userId) {
+        throw new ForbiddenException({
+          statusCode: 403,
+          error: 'Forbidden',
+          code: 'STORE_RATING_OWN_STORE',
+          message: 'the owner cannot rate their own store',
+        });
       }
 
       const comment =

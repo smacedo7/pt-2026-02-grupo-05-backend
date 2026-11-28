@@ -184,7 +184,9 @@ describe('API documentation (e2e)', () => {
     expect(document.paths['/ratings/{id}'].delete.security).toEqual([
       { bearer: [] },
     ]);
-    expect(document.paths['/ratings/product/{productId}'].get.security).toBeUndefined();
+    expect(
+      document.paths['/ratings/product/{productId}'].get.security,
+    ).toBeUndefined();
     expect(
       document.paths['/ratings/product/{productId}/summary'].get.security,
     ).toBeUndefined();
@@ -215,6 +217,8 @@ describe('API documentation (e2e)', () => {
     expect(
       document.paths['/comments/store-rating/{storeRatingId}'].get.security,
     ).toBeUndefined();
+    // The owner of a store cannot rate it.
+    expect(ratings.post.responses).toHaveProperty('403');
   });
 
   it('never documents credentials in the user representation', () => {

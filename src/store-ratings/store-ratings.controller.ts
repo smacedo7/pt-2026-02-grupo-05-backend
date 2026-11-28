@@ -47,12 +47,16 @@ export class StoreRatingsController {
   @ApiOperation({
     summary: 'Rate a store',
     description:
-      'Any authenticated user can rate a store once, with 0 to 5 stars and an optional comment.',
+      'Any authenticated user, except the owner of the store, can rate it once, with 0 to 5 stars and an optional comment.',
   })
   @ApiParam({ name: 'storeId', example: 1 })
   @ApiCreatedResponse({ type: StoreRatingResponseDto })
   @ApiBadRequestResponse(ValidationErrorResponse)
   @ApiUnauthorizedResponse(UnauthorizedResponse)
+  @ApiForbiddenResponse({
+    description:
+      'The account owns the store (STORE_RATING_OWN_STORE). Nothing is created.',
+  })
   @ApiNotFoundResponse({ description: 'Store not found.' })
   @ApiConflictResponse({ description: 'Store already rated by this user.' })
   create(
