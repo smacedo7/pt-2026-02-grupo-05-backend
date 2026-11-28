@@ -16,6 +16,7 @@ import {
 } from './dto/list-products.query.dto';
 import {
   ProductDetailResponseDto,
+  ProductListItemDto,
   ProductResponseDto,
 } from './dto/product-response.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -39,6 +40,15 @@ const SUMMARY_SELECT = {
   updatedAt: true,
 } satisfies Prisma.ProductSelect;
 
+const LIST_SELECT = {
+  ...SUMMARY_SELECT,
+  images: {
+    select: { imageUrl: true },
+    orderBy: IMAGE_ORDER,
+    take: 1,
+  },
+} satisfies Prisma.ProductSelect;
+
 const DETAIL_SELECT = {
   ...SUMMARY_SELECT,
   store: { select: { id: true, name: true } },
@@ -51,6 +61,9 @@ const DETAIL_SELECT = {
 
 type ProductSummary = Prisma.ProductGetPayload<{
   select: typeof SUMMARY_SELECT;
+}>;
+type ProductListItem = Prisma.ProductGetPayload<{
+  select: typeof LIST_SELECT;
 }>;
 type ProductDetail = Prisma.ProductGetPayload<{
   select: typeof DETAIL_SELECT;
@@ -99,19 +112,19 @@ export class ProductsService {
     });
   }
 
-  async findAll(query: ListProductsQueryDto): Promise<ProductResponseDto[]> {
+  async findAll(query: ListProductsQueryDto): Promise<ProductListItemDto[]> {
     const where: Prisma.ProductWhereInput = {};
     if (query.storeId !== undefined) where.storeId = query.storeId;
     if (query.categoryId !== undefined) where.categoryId = query.categoryId;
 
     const products = await this.prisma.product.findMany({
       where,
-      select: SUMMARY_SELECT,
+      select: LIST_SELECT,
       orderBy: LIST_ORDER,
       take: query.limit ?? DEFAULT_LIMIT,
       skip: query.offset ?? 0,
     });
-    return products.map(toSummary);
+    return products.map(toListItem);
   }
 
   async findOne(id: number): Promise<ProductDetailResponseDto> {
@@ -243,6 +256,22 @@ function toSummary(product: ProductSummary): ProductResponseDto {
     stock: product.stock,
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString(),
+  };
+}
+
+function toListItem(product: ProductListItem): ProductListItemDto {
+  const summary = toSummary(product);
+  return {
+    id: summary.id,
+    storeId: summary.storeId,
+    categoryId: summary.categoryId,
+    name: summary.name,
+    description: summary.description,
+    price: summary.price,
+    stock: summary.stock,
+    createdAt: summary.createdAt,
+    updatedAt: summary.updatedAt,
+    imageUrl: product.images[0]?.imageUrl ?? null,
   };
 }
 

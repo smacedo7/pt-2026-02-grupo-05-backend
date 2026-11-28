@@ -153,18 +153,34 @@ describe('ProductsService', () => {
   });
 
   describe('findAll', () => {
-    it('applies filters, default page size and stable order', async () => {
-      db.product.findMany.mockResolvedValue([row()]);
+    it('applies filters, default page size, primary image and stable order', async () => {
+      db.product.findMany.mockResolvedValue([
+        row({ images: [{ imageUrl: 'https://exemplo.com/capa.png' }] }),
+      ]);
 
       const result = await service.findAll({ storeId: 3, categoryId: 2 });
 
       expect(db.product.findMany.mock.calls[0][0]).toMatchObject({
         where: { storeId: 3, categoryId: 2 },
+        select: {
+          images: {
+            select: { imageUrl: true },
+            orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+            take: 1,
+          },
+        },
         orderBy: [{ name: 'asc' }, { id: 'asc' }],
         take: 50,
         skip: 0,
       });
       expect(result[0].price).toBe(199.9);
+      expect(result[0].imageUrl).toBe('https://exemplo.com/capa.png');
+    });
+
+    it('returns imageUrl null when the product has no images', async () => {
+      db.product.findMany.mockResolvedValue([row({ images: [] })]);
+      const result = await service.findAll({});
+      expect(result[0].imageUrl).toBeNull();
     });
 
     it('uses limit and offset when sent and no filter otherwise', async () => {

@@ -218,6 +218,37 @@ describe('Products (e2e)', () => {
         'Vaso',
       ]);
       expect(response.body[0]).not.toHaveProperty('store');
+      expect(response.body[0].imageUrl).toBeNull();
+    });
+
+    it('8b. includes the primary imageUrl ordered by sortOrder then id', async () => {
+      const s = await scenario();
+      const product = await prisma.product.create({
+        data: {
+          storeId: s.store.id,
+          categoryId: s.category.id,
+          name: 'Cabo',
+          price: 10,
+          stock: 1,
+        },
+      });
+      await prisma.productImage.create({
+        data: {
+          productId: product.id,
+          imageUrl: 'https://exemplo.com/segunda.png',
+          sortOrder: 2,
+        },
+      });
+      await prisma.productImage.create({
+        data: {
+          productId: product.id,
+          imageUrl: 'https://exemplo.com/primeira.png',
+          sortOrder: 0,
+        },
+      });
+
+      const response = await http().get('/products').expect(200);
+      expect(response.body[0].imageUrl).toBe('https://exemplo.com/primeira.png');
     });
 
     it('9. filters by store and by category', async () => {
