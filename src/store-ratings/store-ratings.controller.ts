@@ -6,7 +6,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseIntPipe,
   Patch,
   Post,
   UseGuards,
@@ -28,6 +27,7 @@ import {
 import { UnauthorizedResponse, ValidationErrorResponse } from '../api-errors';
 import { CurrentUserId } from '../auth/current-user-id.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { EntityIdPipe } from '../common/pipes/entity-id.pipe';
 import { CreateStoreRatingDto } from './dto/create-store-rating.dto';
 import {
   StoreRatingResponseDto,
@@ -61,7 +61,7 @@ export class StoreRatingsController {
   @ApiConflictResponse({ description: 'Store already rated by this user.' })
   create(
     @CurrentUserId() userId: number,
-    @Param('storeId', ParseIntPipe) storeId: number,
+    @Param('storeId', EntityIdPipe) storeId: number,
     @Body() dto: CreateStoreRatingDto,
   ): Promise<StoreRatingResponseDto> {
     return this.storeRatings.create(userId, storeId, dto);
@@ -74,7 +74,7 @@ export class StoreRatingsController {
   @ApiBadRequestResponse(ValidationErrorResponse)
   @ApiNotFoundResponse({ description: 'Store not found.' })
   findByStore(
-    @Param('storeId', ParseIntPipe) storeId: number,
+    @Param('storeId', EntityIdPipe) storeId: number,
   ): Promise<StoreRatingsListResponseDto> {
     return this.storeRatings.findByStore(storeId);
   }
@@ -95,7 +95,7 @@ export class StoreRatingsController {
   @ApiConflictResponse({ description: 'Concurrent write conflict.' })
   update(
     @CurrentUserId() userId: number,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', EntityIdPipe) id: number,
     @Body() dto: UpdateStoreRatingDto,
   ): Promise<StoreRatingResponseDto> {
     return this.storeRatings.update(userId, id, dto);
@@ -118,7 +118,7 @@ export class StoreRatingsController {
   @ApiConflictResponse({ description: 'Concurrent write conflict.' })
   async remove(
     @CurrentUserId() userId: number,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', EntityIdPipe) id: number,
   ): Promise<void> {
     await this.storeRatings.remove(userId, id);
   }
