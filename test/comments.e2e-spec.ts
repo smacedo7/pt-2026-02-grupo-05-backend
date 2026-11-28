@@ -185,6 +185,40 @@ describe('Rating comments (e2e)', () => {
     });
   });
 
+  describe('the comment content', () => {
+    it('keeps line breaks and tabs, as rating comments do', async () => {
+      const s = await scenario();
+      const content = 'Primeira linha\nSegunda linha\r\n\tcom recuo';
+
+      const created = await comment(s.anaToken, {
+        storeRatingId: SHARED_ID,
+        content,
+      }).expect(201);
+
+      expect(created.body.content).toBe(content);
+      expect((await listStore(SHARED_ID))[0].content).toBe(content);
+      await http()
+        .patch(`/comments/${created.body.id}`)
+        .set(...bearer(s.anaToken))
+        .send({ content: 'editado\nem duas linhas' })
+        .expect(200);
+    });
+
+    it.each([
+      ['a null character', 'a\u0000b'],
+      ['another control character', 'a\u0007b'],
+      ['only line breaks', '\n\n'],
+    ])('answers 400 for %s', async (_label, content) => {
+      const s = await scenario();
+
+      await comment(s.anaToken, { storeRatingId: SHARED_ID, content }).expect(
+        400,
+      );
+
+      expect(await prisma.ratingComment.count()).toBe(0);
+    });
+  });
+
   describe('the comment target', () => {
     it.each([
       [

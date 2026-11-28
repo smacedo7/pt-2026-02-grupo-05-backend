@@ -48,6 +48,14 @@ describe('CreateCommentDto', () => {
   });
 });
 
+describe('comment content', () => {
+  it('accepts several lines on create and edit', async () => {
+    const content = 'linha 1\nlinha 2';
+    expect(await messagesFor(CreateCommentDto, { ...valid, content })).toEqual([]);
+    expect(await messagesFor(UpdateCommentDto, { content })).toEqual([]);
+  });
+});
+
 describe('UpdateCommentDto', () => {
   it('accepts an empty body and valid partial bodies', async () => {
     expect(await messagesFor(UpdateCommentDto, {})).toEqual([]);
